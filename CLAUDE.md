@@ -10,7 +10,7 @@ The system is NOT Kanban. It is a **daily commitment + priority tier + win track
 
 ## Tech Stack
 
-- **Backend**: Laravel 11
+- **Backend**: Laravel 12
 - **Frontend**: Blade + Tailwind CSS (no separate JS framework unless specified)
 - **Database**: MySQL (via Hostinger)
 - **Auth**: Google OAuth (Laravel Socialite)
