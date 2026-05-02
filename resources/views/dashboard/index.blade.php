@@ -87,6 +87,11 @@
                             @endif
                         </button>
                         <span class="flex-1 text-[15px] {{ $task->done ? 'line-through text-[#6B6B6B]' : '' }}">{{ $task->text }}</span>
+                        @if(($task->days_late ?? 0) >= 2)
+                            <span class="text-[10px] font-bold bg-[#FF4F00] text-white px-2 py-0.5 rounded-[3px] shrink-0">🚨 URGENT</span>
+                        @elseif(($task->days_late ?? 0) === 1)
+                            <span class="text-[10px] font-bold bg-[#FFC900] text-black px-2 py-0.5 rounded-[3px] shrink-0">⚠️ LATE</span>
+                        @endif
                         @if($key === 'park')
                             <button onclick="promoteTask({{ $task->id }}, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>
                         @endif

@@ -21,7 +21,6 @@ class TaskController extends Controller
 
         if ($request->section === 'must') {
             $mustCount = Task::where('user_id', $user->id)
-                ->where('date', $today)
                 ->where('section', 'must')
                 ->where('done', false)
                 ->count();

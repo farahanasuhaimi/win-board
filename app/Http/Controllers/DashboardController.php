@@ -16,12 +16,25 @@ class DashboardController extends Controller
 
         $commit = DailyCommit::where('user_id', $user->id)->where('date', $today)->first();
 
-        $tasks = Task::where('user_id', $user->id)
+        $todayTasks = Task::where('user_id', $user->id)
             ->where('date', $today)
             ->orderBy('done')
             ->orderBy('sort_order')
             ->get()
-            ->groupBy('section');
+            ->each(fn($t) => $t->days_late = 0);
+
+        $carryForward = Task::where('user_id', $user->id)
+            ->where('date', '<', $today)
+            ->where('done', false)
+            ->whereIn('section', ['must', 'should'])
+            ->orderBy('date')
+            ->get()
+            ->each(function ($task) use ($today) {
+                $task->days_late = \Carbon\Carbon::parse($task->date)->diffInDays($today);
+            });
+
+        // Carry-forward tasks appear first in each section
+        $tasks = $carryForward->concat($todayTasks)->groupBy('section');
 
         $stat = UserStat::firstOrCreate(['user_id' => $user->id]);
 
