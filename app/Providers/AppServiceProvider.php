@@ -3,33 +3,27 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Laravel\Socialite\Facades\Socialite;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        $certPath = env('CURL_CA_BUNDLE', 'C:\Users\IGS\cacert.pem');
-
-        Socialite::extend('google', function ($app) use ($certPath) {
-            $config = $app['config']['services.google'];
-            return Socialite::buildProvider(
-                \Laravel\Socialite\Two\GoogleProvider::class,
-                $config
-            )->setHttpClient(new \GuzzleHttp\Client([
-                'verify' => $certPath,
-            ]));
-        });
+        // Hostinger's php.ini has a broken Windows path for curl.cainfo — override with system bundle
+        $candidates = [
+            '/etc/ssl/certs/ca-certificates.crt',   // Debian/Ubuntu
+            '/etc/pki/tls/certs/ca-bundle.crt',     // CentOS/RHEL
+        ];
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                putenv("CURL_CA_BUNDLE=$path");
+                putenv("SSL_CERT_FILE=$path");
+                break;
+            }
+        }
     }
 }
