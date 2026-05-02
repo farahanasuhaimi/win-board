@@ -163,8 +163,10 @@ user_stats: id, user_id, streak (int default 0), total_wins (int default 0), las
 ```
 GET  /dashboard              → Today's board (auth required)
 POST /commit                 → Save daily commitment
+POST /commit/unlock          → Unlock commitment for editing
 POST /tasks                  → Add task
 PATCH /tasks/{id}/toggle     → Mark done/undone
+PATCH /tasks/{id}/move       → Move task to another section (restrictions apply)
 PATCH /tasks/{id}/promote    → Move parking lot → tomorrow's should
 DELETE /tasks/{id}           → Delete task
 POST /day/reset              → Reset today
@@ -282,6 +284,19 @@ theme: {
 - Mobile: stack 2×2 grid to single column. Full-width inputs.
 - The "Must Do Today" 3-task hard cap should be enforced both client-side (disable add button) AND server-side (validate in TaskController)
 - On first load with no tasks, show empty state per section with a ghost/dashed placeholder card with prompt text
+
+### Move Rules
+- `must` tasks cannot be moved — delete or complete only
+- Nothing can be moved TO `must` via the move action
+- Allowed moves: `should ↔ good`, `should → park`, `good → park`, `park → should/good`
+- Moving to `should` respects the 5-task cap
+
+### Carry-Forward Rules
+- Undone `must` and `should` tasks from previous days automatically appear at the top of their sections the next day
+- `good` and `park` tasks do NOT carry forward (lower priority / intentionally deferred)
+- Done tasks from previous days do NOT appear
+- Urgency badges: 1 day overdue → `⚠️ LATE` (amber), 2+ days → `🚨 URGENT` (red)
+- Must cap (max 3) counts ALL undone must tasks regardless of date, including carry-forward
 
 ---
 

@@ -5,7 +5,7 @@ A daily execution system built for people who know what they need to do — but 
 Not Kanban. Not another todo list. A **commitment-first, dopamine-driven daily board** that forces prioritisation, rewards action, and tracks consistency over time.
 
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38BDF8?style=flat&logo=tailwindcss&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.x-38BDF8?style=flat&logo=tailwindcss&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-black?style=flat)
 
@@ -29,7 +29,9 @@ Daily Win Board fixes this with three mechanisms:
 - 📋 **Four-tier task board** — Must Do, Should Do, Good To Do, Parking Lot
 - ✅ **Win counter + day streak** — tracks consistency, not just completion
 - 🎉 **Celebration toast** — small dopamine hit on every completed task
+- ⇄ **Move between sections** — with enforced rules (Must is locked, nothing promotes to Must)
 - 🚗 **Parking Lot → Tomorrow** — promote ideas to tomorrow's board in one click
+- ⚠️ **Carry-forward with urgency badges** — undone Must/Should tasks reappear next day marked Late or Urgent
 - 🔄 **Reset Day** — clean slate, no guilt
 - 🔐 **Google OAuth** — one-click login, no passwords
 
@@ -39,7 +41,7 @@ Daily Win Board fixes this with three mechanisms:
 
 | Layer | Technology |
 |---|---|
-| Backend | Laravel 11 |
+| Backend | Laravel 12 |
 | Frontend | Blade + Tailwind CSS |
 | Database | MySQL 8.0 |
 | Auth | Google OAuth via Laravel Socialite |
@@ -175,18 +177,22 @@ See `CLAUDE.md` for full schema details.
 
 ## Roadmap
 
-### Phase 1 (Current)
+### Phase 1 (Complete)
 - [x] Project setup and CLAUDE.md spec
-- [ ] Google OAuth + user management
-- [ ] Daily commitment lock
-- [ ] Four-tier task board
-- [ ] Win counter + streak tracker
-- [ ] Celebration toast
-- [ ] Parking lot → promote to tomorrow
-- [ ] Reset day
-- [ ] Mobile responsive
+- [x] Google OAuth + user management
+- [x] Daily commitment lock
+- [x] Four-tier task board (Must / Should / Good / Parking Lot)
+- [x] Win counter + streak tracker
+- [x] Celebration toast
+- [x] Parking lot → promote to tomorrow
+- [x] Move tasks between sections (with restrictions)
+- [x] Carry-forward undone Must/Should with Late/Urgent badges
+- [x] Reset day
+- [x] Deployed to Hostinger (`life.drtakaful.com`)
+- [ ] Mobile responsive polish
 
 ### Phase 2
+- [ ] Win history — completed tasks log with dates and times
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily
 - [ ] Daily tasks linkable to quarterly goals
 - [ ] Weekly review view
