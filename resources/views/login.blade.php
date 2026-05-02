@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Win Board — Login</title>
+
+    {{-- Open Graph --}}
+    <meta property="og:title" content="Daily Win Board">
+    <meta property="og:description" content="A commitment-first, dopamine-driven daily board. Lock in your one non-negotiable, prioritise ruthlessly, and track your wins.">
+    <meta property="og:image" content="{{ asset('images/og.png') }}">
+    <meta property="og:url" content="https://life.drtakaful.com">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Daily Win Board">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Daily Win Board">
+    <meta name="twitter:description" content="A commitment-first, dopamine-driven daily board. Lock in your one non-negotiable, prioritise ruthlessly, and track your wins.">
+    <meta name="twitter:image" content="{{ asset('images/og.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
