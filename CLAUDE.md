@@ -300,12 +300,14 @@ theme: {
 
 ---
 
-## Out of Scope (for now)
+## Out of Scope (for now — Phase 2)
 
+- Win history page (done tasks log with date + done_at time)
+- Admin dashboard (user management, usage stats)
 - Weekly/monthly review views
 - Recurring tasks
+- Goal Cascade (10yr → 5yr → yearly → quarterly → daily)
 - Team/shared boards
-- AI content generator integration (separate feature)
 - Mobile app / PWA (add later)
 
 ---

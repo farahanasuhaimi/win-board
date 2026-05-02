@@ -193,6 +193,7 @@ See `CLAUDE.md` for full schema details.
 
 ### Phase 2
 - [ ] Win history — completed tasks log with dates and times
+- [ ] Admin dashboard — user management, usage stats, system overview
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily
 - [ ] Daily tasks linkable to quarterly goals
 - [ ] Weekly review view
