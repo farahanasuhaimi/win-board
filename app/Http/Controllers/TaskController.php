@@ -59,6 +59,39 @@ class TaskController extends Controller
         return response()->json(['done' => $task->done]);
     }
 
+    public function move(Request $request, Task $task)
+    {
+        $this->authorise($task);
+
+        $allowed = [
+            'should' => ['good', 'park'],
+            'good'   => ['should', 'park'],
+            'park'   => ['good', 'should'],
+        ];
+
+        $to = $request->input('section');
+
+        if (!isset($allowed[$task->section]) || !in_array($to, $allowed[$task->section])) {
+            return response()->json(['error' => 'Move not allowed.'], 422);
+        }
+
+        if ($to === 'should') {
+            $count = Task::where('user_id', $task->user_id)
+                ->where('date', $task->date)
+                ->where('section', 'should')
+                ->where('done', false)
+                ->count();
+            if ($count >= 5) {
+                return response()->json(['error' => 'Should Do is full (max 5).'], 422);
+            }
+        }
+
+        $task->section = $to;
+        $task->save();
+
+        return response()->json(['section' => $to]);
+    }
+
     public function promote(Task $task)
     {
         $this->authorise($task);

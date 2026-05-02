@@ -27,5 +27,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/tasks', [TaskController::class, 'store'])->name('tasks.store');
     Route::patch('/tasks/{task}/toggle', [TaskController::class, 'toggle'])->name('tasks.toggle');
     Route::patch('/tasks/{task}/promote', [TaskController::class, 'promote'])->name('tasks.promote');
+    Route::patch('/tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
 });

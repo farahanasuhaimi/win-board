@@ -90,6 +90,18 @@
                         @if($key === 'park')
                             <button onclick="promoteTask({{ $task->id }}, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>
                         @endif
+                        @if($key !== 'must' && !$task->done)
+                            <div class="relative move-wrap">
+                                <button onclick="toggleMoveMenu(event, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
+                                <div class="move-dropdown hidden absolute right-0 top-full mt-1 bg-white border-2 border-black z-20 text-xs font-bold" style="box-shadow: 2px 2px 0 #000;">
+                                    @foreach($sections as $targetKey => $targetMeta)
+                                        @if($targetKey !== $key && $targetKey !== 'must')
+                                            <button onclick="moveTask({{ $task->id }}, '{{ $targetKey }}', this)" class="block w-full text-left px-3 py-2 hover:bg-black hover:text-white whitespace-nowrap">{{ $targetMeta['emoji'] }} {{ $targetMeta['label'] }}</button>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                         <button onclick="deleteTask({{ $task->id }}, this)" class="opacity-0 group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
                     </li>
                 @empty
@@ -139,6 +151,16 @@
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const toastMessages = ['Done! Keep going 🔥', 'Yes! That counts!', 'One more win!', 'You showed up.', 'Progress! ⭐'];
+const sectionLabels = {
+    should: '🟡 Should Do Today',
+    good:   '🟢 Good To Do',
+    park:   '🅿️ Parking Lot',
+};
+const moveTargets = {
+    should: ['good', 'park'],
+    good:   ['should', 'park'],
+    park:   ['good', 'should'],
+};
 
 function showToast(msg) {
     const t = document.getElementById('toast');
@@ -215,10 +237,20 @@ function appendTask(task, section) {
         ? `<button onclick="promoteTask(${task.id}, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>`
         : '';
 
+    const moveOptions = (moveTargets[section] || [])
+        .map(k => `<button onclick="moveTask(${task.id}, '${k}', this)" class="block w-full text-left px-3 py-2 hover:bg-black hover:text-white whitespace-nowrap">${sectionLabels[k]}</button>`)
+        .join('');
+    const moveBtn = section !== 'must' ? `
+        <div class="relative move-wrap">
+            <button onclick="toggleMoveMenu(event, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
+            <div class="move-dropdown hidden absolute right-0 top-full mt-1 bg-white border-2 border-black z-20 text-xs font-bold" style="box-shadow:2px 2px 0 #000;">${moveOptions}</div>
+        </div>` : '';
+
     li.innerHTML = `
         <button onclick="toggleTask(${task.id}, this)" class="flex-shrink-0 w-5 h-5 border-2 border-black rounded-[3px] flex items-center justify-center cursor-pointer hover:bg-black/10 transition-colors"></button>
         <span class="flex-1 text-[15px]">${escapeHtml(task.text)}</span>
         ${promoteBtn}
+        ${moveBtn}
         <button onclick="deleteTask(${task.id}, this)" class="opacity-0 group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
     `;
     list.appendChild(li);
@@ -282,6 +314,46 @@ async function deleteTask(id, btn) {
     li.remove();
     updateCount(section);
 }
+
+async function moveTask(id, targetSection, btn) {
+    const dropdown = btn.closest('.move-dropdown');
+    const li = dropdown.closest('li');
+    const fromSection = li.dataset.section;
+    dropdown.classList.add('hidden');
+
+    const res = await fetch(`/tasks/${id}/move`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ section: targetSection })
+    });
+
+    if (!res.ok) {
+        const data = await res.json();
+        alert(data.error);
+        return;
+    }
+
+    const text = li.querySelector('span').textContent;
+    li.remove();
+    appendTask({ id, text }, targetSection);
+    removePlaceholder(targetSection);
+    updateCount(fromSection);
+    updateCount(targetSection);
+    showToast('Moved ✓');
+}
+
+function toggleMoveMenu(e, btn) {
+    e.stopPropagation();
+    const dropdown = btn.nextElementSibling;
+    document.querySelectorAll('.move-dropdown').forEach(d => {
+        if (d !== dropdown) d.classList.add('hidden');
+    });
+    dropdown.classList.toggle('hidden');
+}
+
+document.addEventListener('click', () => {
+    document.querySelectorAll('.move-dropdown').forEach(d => d.classList.add('hidden'));
+});
 
 function updateCount(section) {
     const list = document.getElementById('task-list-' + section);
