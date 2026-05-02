@@ -191,12 +191,14 @@ See `CLAUDE.md` for full schema details.
 - [x] Deployed to Hostinger (`life.drtakaful.com`)
 - [ ] Mobile responsive polish
 
-### Phase 2
+### Phase 2 (Group A — Extensions)
 - [ ] Win history — completed tasks log with dates and times
-- [ ] Admin dashboard — user management, usage stats, system overview
+- [ ] Admin dashboard — user management, usage stats (admin retains own user dashboard too)
+- [ ] Weekly review — wins per day, streak graph, completion rate by section
+
+### Phase 3 (Group B — Goal Cascade)
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily
 - [ ] Daily tasks linkable to quarterly goals
-- [ ] Weekly review view
 - [ ] Recurring tasks
 - [ ] PWA / installable on mobile
 

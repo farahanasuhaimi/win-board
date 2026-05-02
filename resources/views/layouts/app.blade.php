@@ -28,7 +28,13 @@
     <span class="font-display text-xl font-black tracking-tight">DAILY WIN BOARD</span>
     <div class="flex items-center gap-4">
         @auth
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-4">
+                <a href="{{ route('dashboard') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
+                <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
+                <a href="{{ route('review') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
+                @if(auth()->user()->is_admin)
+                    <a href="{{ route('admin.index') }}" class="text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
+                @endif
                 @if(auth()->user()->avatar)
                     <img src="{{ auth()->user()->avatar }}" class="w-8 h-8 rounded-full border-2 border-black" alt="">
                 @endif

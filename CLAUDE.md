@@ -300,15 +300,32 @@ theme: {
 
 ---
 
-## Out of Scope (for now — Phase 2)
+## Phase 2 — In Scope
 
-- Win history page (done tasks log with date + done_at time)
-- Admin dashboard (user management, usage stats)
-- Weekly/monthly review views
-- Recurring tasks
+### Win History (`/history`)
+- List all done tasks for the authenticated user, ordered by done_at desc
+- Group by date
+- Show done_at time, section badge, task text
+- No pagination needed initially — load all
+
+### Admin Dashboard (`/admin`)
+- Gate: `is_admin = true` on users table (bool, default false)
+- Admin is also a regular user — they retain full access to `/dashboard`
+- Admin-only views: user list, total wins per user, streak leaderboard, daily active users, tasks created today
+- Middleware: `AdminMiddleware` checks `auth()->user()->is_admin`
+
+### Weekly Review (`/review`)
+- Wins per day for the last 7 days (bar or number grid)
+- Streak display
+- Completion rate by section (done / total per section this week)
+
+## Phase 3 — Out of Scope (Goal Cascade)
+
 - Goal Cascade (10yr → 5yr → yearly → quarterly → daily)
+- Daily tasks linkable to quarterly goals
+- Recurring tasks
 - Team/shared boards
-- Mobile app / PWA (add later)
+- Mobile app / PWA
 
 ---
 

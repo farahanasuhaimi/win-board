@@ -24,7 +24,13 @@ class User extends Authenticatable
         'password',
         'google_id',
         'avatar',
+        'is_admin',
     ];
+
+    public function stat()
+    {
+        return $this->hasOne(UserStat::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
