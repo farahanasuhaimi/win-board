@@ -33,8 +33,8 @@
             {{-- Desktop nav links --}}
             <div class="hidden sm:flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
-                <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
                 <a href="{{ route('review') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
+                <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
                 @if(auth()->user()->is_admin)
                     <a href="{{ route('admin.index') }}" class="text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
                 @endif
@@ -54,8 +54,8 @@
     @auth
     <div class="sm:hidden flex items-center gap-5 px-4 py-2 border-t border-[#E8E8E0]">
         <a href="{{ route('dashboard') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
-        <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
         <a href="{{ route('review') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
+        <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
         @if(auth()->user()->is_admin)
             <a href="{{ route('admin.index') }}" class="text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
         @endif
