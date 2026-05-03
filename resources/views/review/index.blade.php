@@ -5,7 +5,7 @@
 @section('content')
 <div class="mb-6">
     <h1 class="font-display font-extrabold text-2xl uppercase tracking-tight">Weekly Review</h1>
-    <p class="text-[#6B6B6B] text-sm mt-1">Last 7 days — how you actually showed up.</p>
+    <p class="text-[#6B6B6B] text-sm mt-1">{{ $weekLabel }} — how you actually showed up.</p>
 </div>
 
 {{-- Top stats --}}
@@ -34,10 +34,10 @@
     @php $maxWins = max($days->max('wins'), 1); @endphp
     <div class="flex items-end gap-2 h-28">
         @foreach($days as $day)
-            <div class="flex-1 flex flex-col items-center gap-1">
+            <div class="flex-1 flex flex-col items-center gap-1 {{ $day['is_future'] ? 'opacity-30' : '' }}">
                 <span class="font-mono text-[11px] font-bold">{{ $day['wins'] ?: '' }}</span>
                 <div class="w-full rounded-t-[3px] transition-all" style="height: {{ max(($day['wins'] / $maxWins) * 80, $day['wins'] > 0 ? 8 : 2) }}px; background: {{ $day['wins'] > 0 ? '#FF4F00' : '#E8E8E0' }};"></div>
-                <span class="text-[11px] text-[#6B6B6B] font-bold">{{ $day['label'] }}</span>
+                <span class="text-[11px] font-bold {{ $day['is_today'] ? 'text-[#FF4F00]' : 'text-[#6B6B6B]' }}">{{ $day['label'] }}</span>
             </div>
         @endforeach
     </div>
