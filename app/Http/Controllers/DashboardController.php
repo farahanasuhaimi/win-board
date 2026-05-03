@@ -26,11 +26,13 @@ class DashboardController extends Controller
         $carryForward = Task::where('user_id', $user->id)
             ->where('date', '<', $today)
             ->where('done', false)
-            ->whereIn('section', ['must', 'should'])
+            ->whereIn('section', ['must', 'should', 'park'])
             ->orderBy('date')
             ->get()
             ->each(function ($task) use ($today) {
-                $task->days_late = \Carbon\Carbon::parse($task->date)->diffInDays($today);
+                $task->days_late = $task->section === 'park'
+                    ? 0
+                    : \Carbon\Carbon::parse($task->date)->diffInDays($today);
             });
 
         // Carry-forward tasks appear first in each section
