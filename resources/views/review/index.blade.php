@@ -32,11 +32,19 @@
 <div class="card mb-6" style="box-shadow: var(--shadow-hard);">
     <div class="text-xs font-bold uppercase tracking-widest text-[#6B6B6B] mb-4">Wins Per Day</div>
     @php $maxWins = max($days->max('wins'), 1); @endphp
-    <div class="flex items-end gap-2 h-28">
+    {{-- Bar chart area — bars grow upward from shared baseline --}}
+    <div class="flex items-end gap-2 h-24">
         @foreach($days as $day)
-            <div class="flex-1 flex flex-col items-center gap-1 {{ $day['is_future'] ? 'opacity-30' : '' }}">
+            <div class="flex-1 flex flex-col items-center justify-end gap-1 {{ $day['is_future'] ? 'opacity-30' : '' }}">
                 <span class="font-mono text-[11px] font-bold">{{ $day['wins'] ?: '' }}</span>
                 <div class="w-full rounded-t-[3px] transition-all" style="height: {{ max(($day['wins'] / $maxWins) * 80, $day['wins'] > 0 ? 8 : 2) }}px; background: {{ $day['wins'] > 0 ? '#FF4F00' : '#E8E8E0' }};"></div>
+            </div>
+        @endforeach
+    </div>
+    {{-- Day labels row, always at the bottom --}}
+    <div class="flex gap-2 mt-1">
+        @foreach($days as $day)
+            <div class="flex-1 text-center {{ $day['is_future'] ? 'opacity-30' : '' }}">
                 <span class="text-[11px] font-bold {{ $day['is_today'] ? 'text-[#FF4F00]' : 'text-[#6B6B6B]' }}">{{ $day['label'] }}</span>
             </div>
         @endforeach
