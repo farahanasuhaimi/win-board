@@ -17,7 +17,7 @@ Kanban boards give you visibility but zero urgency. Cards just sit there. Nothin
 
 Daily Win Board fixes this with three mechanisms:
 
-- **One non-negotiable commitment** — you lock in your most important task before anything else
+- **One non-negotiable commitment** — you lock in your most important task before anything else, optionally linked to a Must task so ticking it marks your commitment done
 - **Three priority tiers** — Must / Should / Good To Do. Hard cap of 3 on "Must" so you can't lie to yourself
 - **Real dopamine on done** — win counter, streak tracker, and celebration toast every time you tick something off
 
@@ -25,15 +25,19 @@ Daily Win Board fixes this with three mechanisms:
 
 ## Features
 
-- 🔒 **Daily Commitment Lock** — one non-negotiable task, locked in each morning
+- 🔒 **Daily Commitment Lock** — one non-negotiable, locked in each morning; pick from your Must tasks or type your own intention
 - 📋 **Four-tier task board** — Must Do, Should Do, Good To Do, Parking Lot
 - ✅ **Win counter + day streak** — tracks consistency, not just completion
 - 🎉 **Celebration toast** — small dopamine hit on every completed task
-- ⇄ **Move between sections** — with enforced rules (Must is locked, nothing promotes to Must)
-- 🚗 **Parking Lot → Tomorrow** — promote ideas to tomorrow's board in one click
-- ⚠️ **Carry-forward with urgency badges** — undone Must/Should tasks reappear next day marked Late or Urgent
+- ⇄ **Move between sections** — with enforced rules (can move Must → Parking Lot via confirmation)
+- ⚠️ **Carry-forward with urgency badges** — undone Must/Should/Park tasks reappear next day; Must/Should get Late or Urgent badges
+- 🗑️ **Must task delete guard** — deleting a Must task prompts: park it first, or delete anyway
+- 📅 **Weekly Review** — Mon–Sun bar chart (wins by completion date), section completion rates
+- 📜 **Win History** — weekly summary cards for completed past weeks
+- 👤 **Admin dashboard** — user management, stats, admin role management
 - 🔄 **Reset Day** — clean slate, no guilt
 - 🔐 **Google OAuth** — one-click login, no passwords
+- 📱 **Mobile responsive** — two-row navbar, task action buttons always visible on touch
 
 ---
 
@@ -42,10 +46,9 @@ Daily Win Board fixes this with three mechanisms:
 | Layer | Technology |
 |---|---|
 | Backend | Laravel 12 |
-| Frontend | Blade + Tailwind CSS |
+| Frontend | Blade + Tailwind CSS v4 |
 | Database | MySQL 8.0 |
 | Auth | Google OAuth via Laravel Socialite |
-| Push Notifications | Browser Push (web-push) |
 | Hosting | Hostinger |
 
 ---
@@ -65,8 +68,8 @@ Daily Win Board fixes this with three mechanisms:
 **1. Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/daily-win-board.git
-cd daily-win-board
+git clone https://github.com/farahanasuhaimi/win-board.git
+cd win-board
 ```
 
 **2. Install dependencies**
@@ -96,9 +99,6 @@ DB_PASSWORD=your_db_password
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
-
-VAPID_PUBLIC_KEY=your_vapid_public_key
-VAPID_PRIVATE_KEY=your_vapid_private_key
 ```
 
 **5. Run migrations**
@@ -134,69 +134,64 @@ Visit `http://localhost:8000` and log in with Google.
 5. Set authorised redirect URI to `http://localhost:8000/auth/google/callback`
 6. Copy Client ID and Secret into `.env`
 
----
-
-## VAPID Keys (Push Notifications)
-
-Generate your VAPID keys:
-
-```bash
-php artisan webpush:vapid
-```
-
-Copy the output into your `.env` as `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`.
+For production, add your live domain as an additional authorised redirect URI.
 
 ---
 
 ## Database Schema
 
 ```
-users               — Google OAuth users
-daily_commits       — One non-negotiable per day per user
-tasks               — All tasks across all sections and dates
+users               — Google OAuth users (name, email, google_id, avatar, is_admin)
+daily_commits       — One non-negotiable per day per user (text, task_id FK nullable, locked_at)
+tasks               — All tasks across all sections and dates (soft deletes, done_at timestamp)
 user_stats          — Streak and total win counts
 ```
-
-See `CLAUDE.md` for full schema details.
 
 ---
 
 ## Deployment (Hostinger)
 
-1. Upload files via Git or SFTP
+1. Push via Git, then `git pull origin main` on server
 2. Set `APP_ENV=production` and `APP_DEBUG=false` in `.env`
-3. Run `php artisan config:cache` and `php artisan route:cache`
-4. Point document root to `/public`
-5. Set up a cron job for Laravel scheduler:
+3. Run `php artisan migrate`
+4. Run `php artisan config:cache && php artisan route:cache`
+5. Point document root to `/public`
+6. Set yourself as admin:
 
-```bash
-* * * * * cd /path-to-project && php artisan schedule:run >> /dev/null 2>&1
+```sql
+UPDATE users SET is_admin = 1 WHERE email = 'your@email.com';
 ```
 
 ---
 
 ## Roadmap
 
-### Phase 1 (Complete)
-- [x] Project setup and CLAUDE.md spec
+### Phase 1 ✅
 - [x] Google OAuth + user management
 - [x] Daily commitment lock
 - [x] Four-tier task board (Must / Should / Good / Parking Lot)
 - [x] Win counter + streak tracker
 - [x] Celebration toast
-- [x] Parking lot → promote to tomorrow
-- [x] Move tasks between sections (with restrictions)
+- [x] Move tasks between sections (with rules)
 - [x] Carry-forward undone Must/Should with Late/Urgent badges
 - [x] Reset day
 - [x] Deployed to Hostinger (`life.drtakaful.com`)
-- [ ] Mobile responsive polish
 
-### Phase 2 (Group A — Extensions)
-- [ ] Win history — completed tasks log with dates and times
-- [ ] Admin dashboard — user management, usage stats (admin retains own user dashboard too)
-- [ ] Weekly review — wins per day, streak graph, completion rate by section
+### Phase 2 ✅
+- [x] Win History — weekly summary cards (past completed weeks)
+- [x] Weekly Review — Mon–Sun bar chart, wins by done_at, section completion rates
+- [x] Admin dashboard — user management, usage stats
 
-### Phase 3 (Group B — Goal Cascade)
+### Phase 2 Polish ✅
+- [x] Mobile responsive navbar (two-row layout)
+- [x] Task action buttons visible on mobile (no hover required)
+- [x] Parking Lot tasks carry forward day-to-day
+- [x] Commitment links to a Must task — ticking it marks commitment ✅ done
+- [x] Must task delete guard — confirm with park option
+- [x] Review chart fixed (upward bars, wins by completion date)
+- [x] History redesigned as weekly summary cards
+
+### Phase 3 — Goal Cascade (planned)
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily
 - [ ] Daily tasks linkable to quarterly goals
 - [ ] Recurring tasks
@@ -207,33 +202,32 @@ See `CLAUDE.md` for full schema details.
 ## Project Structure
 
 ```
-daily-win-board/
+win-board/
 ├── app/
 │   ├── Http/Controllers/
 │   │   ├── AuthController.php
 │   │   ├── DashboardController.php
 │   │   ├── TaskController.php
-│   │   └── CommitController.php
+│   │   ├── CommitController.php
+│   │   ├── HistoryController.php
+│   │   ├── ReviewController.php
+│   │   └── AdminController.php
 │   └── Models/
 │       ├── User.php
 │       ├── Task.php
 │       ├── DailyCommit.php
 │       └── UserStat.php
-├── resources/
-│   └── views/
-│       ├── layouts/app.blade.php
-│       └── dashboard/index.blade.php
+├── resources/views/
+│   ├── layouts/app.blade.php
+│   ├── dashboard/index.blade.php
+│   ├── history/index.blade.php
+│   ├── review/index.blade.php
+│   └── admin/index.blade.php
 ├── routes/web.php
 ├── database/migrations/
 ├── CLAUDE.md
 └── README.md
 ```
-
----
-
-## Contributing
-
-This is a personal project but PRs are welcome. Open an issue first to discuss what you'd like to change.
 
 ---
 
@@ -243,4 +237,4 @@ MIT — do what you want with it.
 
 ---
 
-Built by [Hana Suhaimi](https://drtakaful.com) · [@nufas](https://instagram.com/nufas)
+Built by [Hana Suhaimi](https://drtakaful.com)
