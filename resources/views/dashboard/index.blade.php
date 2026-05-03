@@ -93,11 +93,11 @@
                             <span class="text-[10px] font-bold bg-[#FFC900] text-black px-2 py-0.5 rounded-[3px] shrink-0">⚠️ LATE</span>
                         @endif
                         @if($key === 'park')
-                            <button onclick="promoteTask({{ $task->id }}, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>
+                            <button onclick="promoteTask({{ $task->id }}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>
                         @endif
                         @if($key !== 'must' && !$task->done)
                             <div class="relative move-wrap">
-                                <button onclick="toggleMoveMenu(event, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
+                                <button onclick="toggleMoveMenu(event, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
                                 <div class="move-dropdown hidden absolute right-0 top-full mt-1 bg-white border-2 border-black z-20 text-xs font-bold" style="box-shadow: 2px 2px 0 #000;">
                                     @foreach($sections as $targetKey => $targetMeta)
                                         @if($targetKey !== $key && $targetKey !== 'must')
@@ -107,7 +107,7 @@
                                 </div>
                             </div>
                         @endif
-                        <button onclick="deleteTask({{ $task->id }}, this)" class="opacity-0 group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+                        <button onclick="deleteTask({{ $task->id }}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
                     </li>
                 @empty
                     <li class="task-empty text-[#B0B0A8] text-sm border-2 border-dashed border-[#B0B0A8] rounded-[6px] p-4 text-center">
@@ -239,7 +239,7 @@ function appendTask(task, section) {
     li.dataset.section = section;
 
     const promoteBtn = section === 'park'
-        ? `<button onclick="promoteTask(${task.id}, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>`
+        ? `<button onclick="promoteTask(${task.id}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">→ Tomorrow</button>`
         : '';
 
     const moveOptions = (moveTargets[section] || [])
@@ -247,7 +247,7 @@ function appendTask(task, section) {
         .join('');
     const moveBtn = section !== 'must' ? `
         <div class="relative move-wrap">
-            <button onclick="toggleMoveMenu(event, this)" class="opacity-0 group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
+            <button onclick="toggleMoveMenu(event, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-xs font-bold border border-black rounded px-2 py-1 hover:bg-black hover:text-white transition-all">⇄</button>
             <div class="move-dropdown hidden absolute right-0 top-full mt-1 bg-white border-2 border-black z-20 text-xs font-bold" style="box-shadow:2px 2px 0 #000;">${moveOptions}</div>
         </div>` : '';
 
@@ -256,7 +256,7 @@ function appendTask(task, section) {
         <span class="flex-1 text-[15px]">${escapeHtml(task.text)}</span>
         ${promoteBtn}
         ${moveBtn}
-        <button onclick="deleteTask(${task.id}, this)" class="opacity-0 group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+        <button onclick="deleteTask(${task.id}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
     `;
     list.appendChild(li);
 }

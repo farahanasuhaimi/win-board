@@ -10,7 +10,7 @@
 
 @if($history->isEmpty())
     <div class="card text-center py-12" style="box-shadow: var(--shadow-hard);">
-        <div class="text-4xl mb-3">🏆</div>
+        <div class="text-2xl mb-3">🏆</div>
         <p class="font-bold text-lg">No wins yet.</p>
         <p class="text-[#6B6B6B] text-sm mt-1">Complete tasks on your board and they'll appear here.</p>
     </div>
