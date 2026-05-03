@@ -24,26 +24,43 @@
 </head>
 <body class="min-h-screen bg-[#F4F4F0]">
 
-<nav class="bg-white border-b-2 border-black px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
-    <span class="font-display text-sm sm:text-xl font-black tracking-tight shrink-0">DAILY WIN BOARD</span>
-    <div class="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+<nav class="bg-white border-b-2 border-black">
+    {{-- Top row: brand + avatar/logout --}}
+    <div class="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <span class="font-display text-lg font-black tracking-tight">DAILY WIN BOARD</span>
         @auth
-            <a href="{{ route('dashboard') }}" class="text-xs sm:text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
-            <a href="{{ route('history') }}" class="text-xs sm:text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
-            <a href="{{ route('review') }}" class="text-xs sm:text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
-            @if(auth()->user()->is_admin)
-                <a href="{{ route('admin.index') }}" class="text-xs sm:text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
-            @endif
+        <div class="flex items-center gap-3">
+            {{-- Desktop nav links --}}
+            <div class="hidden sm:flex items-center gap-4">
+                <a href="{{ route('dashboard') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
+                <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
+                <a href="{{ route('review') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
+                @if(auth()->user()->is_admin)
+                    <a href="{{ route('admin.index') }}" class="text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
+                @endif
+            </div>
             @if(auth()->user()->avatar)
                 <img src="{{ auth()->user()->avatar }}" class="w-7 h-7 rounded-full border-2 border-black" alt="">
             @endif
             <span class="hidden sm:inline text-sm font-medium">{{ auth()->user()->name }}</span>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="text-xs sm:text-sm text-[#6B6B6B] hover:text-black font-medium">Logout</button>
+                <button type="submit" class="text-sm text-[#6B6B6B] hover:text-black font-medium">Logout</button>
             </form>
+        </div>
         @endauth
     </div>
+    {{-- Mobile-only nav links row --}}
+    @auth
+    <div class="sm:hidden flex items-center gap-5 px-4 py-2 border-t border-[#E8E8E0]">
+        <a href="{{ route('dashboard') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('dashboard') ? 'underline' : 'text-[#6B6B6B]' }}">Board</a>
+        <a href="{{ route('history') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('history') ? 'underline' : 'text-[#6B6B6B]' }}">History</a>
+        <a href="{{ route('review') }}" class="text-sm font-bold hover:underline {{ request()->routeIs('review') ? 'underline' : 'text-[#6B6B6B]' }}">Review</a>
+        @if(auth()->user()->is_admin)
+            <a href="{{ route('admin.index') }}" class="text-sm font-bold text-[#FF4F00] hover:underline {{ request()->routeIs('admin.*') ? 'underline' : '' }}">⚙ Admin</a>
+        @endif
+    </div>
+    @endauth
 </nav>
 
 <main class="max-w-6xl mx-auto px-4 py-8">
