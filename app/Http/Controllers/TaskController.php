@@ -63,6 +63,7 @@ class TaskController extends Controller
         $this->authorise($task);
 
         $allowed = [
+            'must'   => ['park'],
             'should' => ['good', 'park'],
             'good'   => ['should', 'park'],
             'park'   => ['good', 'should'],

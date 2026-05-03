@@ -121,7 +121,11 @@
                                 </div>
                             </div>
                         @endif
-                        <button onclick="deleteTask({{ $task->id }}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+                        @if($key === 'must')
+                            <button onclick="deleteMustTask({{ $task->id }}, this)" class="opacity-30 hover:opacity-70 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+                        @else
+                            <button onclick="deleteTask({{ $task->id }}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+                        @endif
                     </li>
                 @empty
                     <li class="task-empty text-[#B0B0A8] text-sm border-2 border-dashed border-[#B0B0A8] rounded-[6px] p-4 text-center">
@@ -151,6 +155,19 @@
 {{-- Reset day --}}
 <div class="text-center">
     <button onclick="showResetModal()" class="text-sm text-[#6B6B6B] hover:text-black font-medium underline underline-offset-2">Reset today's tasks</button>
+</div>
+
+{{-- Must task delete confirmation modal --}}
+<div id="must-delete-modal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+    <div class="card max-w-sm w-full" style="box-shadow: 6px 6px 0 #000;">
+        <h3 class="font-display font-extrabold text-xl mb-2">Delete this Must task?</h3>
+        <p class="text-[#6B6B6B] text-[14px] mb-5">It's a non-negotiable — want to park it instead of deleting?</p>
+        <div class="flex flex-col gap-2">
+            <button onclick="mustTaskPark()" class="btn" style="justify-content: center;">🅿️ Move to Parking Lot</button>
+            <button onclick="mustTaskDelete()" class="btn btn-danger" style="justify-content: center;">Delete anyway</button>
+            <button onclick="hideMustDeleteModal()" class="text-sm text-[#6B6B6B] hover:text-black font-medium text-center mt-1">Cancel</button>
+        </div>
+    </div>
 </div>
 
 {{-- Reset modal --}}
@@ -284,7 +301,10 @@ function appendTask(task, section) {
         <span class="flex-1 text-[15px]">${escapeHtml(task.text)}</span>
         ${promoteBtn}
         ${moveBtn}
-        <button onclick="deleteTask(${task.id}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>
+        ${section === 'must'
+            ? `<button onclick="deleteMustTask(${task.id}, this)" class="opacity-30 hover:opacity-70 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>`
+            : `<button onclick="deleteTask(${task.id}, this)" class="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>`
+        }
     `;
     list.appendChild(li);
 }
@@ -416,6 +436,51 @@ function removePlaceholder(section) {
     const list = document.getElementById('task-list-' + section);
     const placeholder = list.querySelector('.task-empty');
     if (placeholder) placeholder.remove();
+}
+
+let mustDeleteTaskId = null;
+let mustDeleteBtn    = null;
+
+function deleteMustTask(id, btn) {
+    mustDeleteTaskId = id;
+    mustDeleteBtn    = btn;
+    document.getElementById('must-delete-modal').classList.remove('hidden');
+}
+
+function hideMustDeleteModal() {
+    document.getElementById('must-delete-modal').classList.add('hidden');
+    mustDeleteTaskId = null;
+    mustDeleteBtn    = null;
+}
+
+async function mustTaskPark() {
+    const id  = mustDeleteTaskId;
+    const btn = mustDeleteBtn;
+    hideMustDeleteModal();
+
+    const li = btn.closest('li');
+    const res = await fetch(`/tasks/${id}/move`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+        body: JSON.stringify({ section: 'park' })
+    });
+
+    if (!res.ok) { const d = await res.json(); alert(d.error); return; }
+
+    const text = li.querySelector('span').textContent;
+    li.remove();
+    appendTask({ id, text }, 'park');
+    removePlaceholder('park');
+    updateCount('must');
+    updateCount('park');
+    showToast('Parked 🅿️');
+}
+
+async function mustTaskDelete() {
+    const id  = mustDeleteTaskId;
+    const btn = mustDeleteBtn;
+    hideMustDeleteModal();
+    await deleteTask(id, btn);
 }
 
 function showResetModal() { document.getElementById('reset-modal').classList.remove('hidden'); }
