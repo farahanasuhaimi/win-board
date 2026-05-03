@@ -45,7 +45,10 @@ class DashboardController extends Controller
             ->where('done', true)
             ->count();
 
-        return view('dashboard.index', compact('commit', 'tasks', 'stat', 'winsToday', 'today'));
+        $commitTaskId = $commit?->task_id;
+        $commitDone   = $commitTaskId ? (bool) Task::find($commitTaskId)?->done : false;
+
+        return view('dashboard.index', compact('commit', 'tasks', 'stat', 'winsToday', 'today', 'commitTaskId', 'commitDone'));
     }
 
     public function reset()

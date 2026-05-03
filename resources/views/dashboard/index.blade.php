@@ -27,20 +27,37 @@
     <div id="commit-locked" class="{{ $commit && $commit->isLocked() ? '' : 'hidden' }}">
         <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <span class="text-2xl">🔒</span>
-                <span class="font-display font-bold text-xl" id="commit-text">{{ $commit?->text }}</span>
+                <span class="text-2xl" id="commit-icon">{{ $commitDone ? '✅' : '🔒' }}</span>
+                <span class="font-display font-bold text-xl {{ $commitDone ? 'line-through text-[#6B6B6B]' : '' }}" id="commit-text">{{ $commit?->text }}</span>
             </div>
-            @if($commit && $commit->canUnlock())
-                <button onclick="unlockCommit()" class="btn text-sm" style="padding: 6px 14px;">Edit</button>
+            @if($commit && $commit->canUnlock() && !$commitDone)
+                <button onclick="unlockCommit()" id="commit-edit-btn" class="btn text-sm" style="padding: 6px 14px;">Edit</button>
             @endif
         </div>
     </div>
     <div id="commit-form" class="{{ $commit && $commit->isLocked() ? 'hidden' : '' }}">
+        @php $mustOptions = ($tasks['must'] ?? collect())->where('done', false); @endphp
+        @if($mustOptions->count() > 0)
+        <div class="mb-3">
+            <p class="text-xs text-[#6B6B6B] font-bold uppercase tracking-wide mb-2">Pick from your Must tasks</p>
+            <div class="flex flex-col gap-2">
+                @foreach($mustOptions as $mustTask)
+                <button type="button"
+                    onclick="selectCommitTask({{ $mustTask->id }}, {{ json_encode($mustTask->text) }})"
+                    class="commit-option text-left text-sm font-medium px-3 py-2 border-2 border-black rounded-[4px] hover:bg-black hover:text-white transition-colors"
+                    data-id="{{ $mustTask->id }}">
+                    {{ $mustTask->text }}
+                </button>
+                @endforeach
+            </div>
+            <p class="text-xs text-[#6B6B6B] font-bold uppercase tracking-wide mt-3 mb-2">Or type your own intention</p>
+        </div>
+        @endif
         <div class="flex gap-3">
             <input type="text"
                    id="commit-input"
                    class="input flex-1 text-lg font-medium"
-                   placeholder="What is your ONE non-negotiable task today?"
+                   placeholder="What is your ONE non-negotiable today?"
                    value="{{ $commit && !$commit->isLocked() ? $commit->text : '' }}"
                    maxlength="500">
             <button onclick="lockCommit()" class="btn whitespace-nowrap" style="padding: 10px 24px;">
@@ -156,6 +173,8 @@
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const toastMessages = ['Done! Keep going 🔥', 'Yes! That counts!', 'One more win!', 'You showed up.', 'Progress! ⭐'];
+const commitTaskId = {{ $commitTaskId ?? 'null' }};
+let selectedCommitTaskId = null;
 const sectionLabels = {
     should: '🟡 Should Do Today',
     good:   '🟢 Good To Do',
@@ -174,15 +193,28 @@ function showToast(msg) {
     setTimeout(() => t.classList.add('hidden'), 1500);
 }
 
+function selectCommitTask(taskId, text) {
+    selectedCommitTaskId = taskId;
+    document.getElementById('commit-input').value = text;
+    document.querySelectorAll('.commit-option').forEach(btn => {
+        const isSelected = parseInt(btn.dataset.id) === taskId;
+        btn.classList.toggle('bg-black', isSelected);
+        btn.classList.toggle('text-white', isSelected);
+    });
+}
+
 async function lockCommit() {
     const input = document.getElementById('commit-input');
     const text = input.value.trim();
     if (!text) return;
 
+    const body = { text };
+    if (selectedCommitTaskId) body.task_id = selectedCommitTaskId;
+
     const res = await fetch('{{ route("commit.store") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ text })
+        body: JSON.stringify(body)
     });
     const data = await res.json();
     if (!res.ok) { alert(data.error); return; }
@@ -199,6 +231,7 @@ async function unlockCommit() {
         headers: { 'X-CSRF-TOKEN': csrfToken }
     });
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
+    selectedCommitTaskId = null;
     document.getElementById('commit-locked').classList.add('hidden');
     document.getElementById('commit-form').classList.remove('hidden');
     document.getElementById('commit-input').value = document.getElementById('commit-text').textContent;
@@ -289,6 +322,21 @@ async function toggleTask(id, btn) {
     }
 
     updateCount(li.dataset.section);
+
+    if (commitTaskId && id === commitTaskId) {
+        const icon    = document.getElementById('commit-icon');
+        const text    = document.getElementById('commit-text');
+        const editBtn = document.getElementById('commit-edit-btn');
+        if (data.done) {
+            if (icon) icon.textContent = '✅';
+            if (text) text.classList.add('line-through', 'text-[#6B6B6B]');
+            if (editBtn) editBtn.classList.add('hidden');
+        } else {
+            if (icon) icon.textContent = '🔒';
+            if (text) text.classList.remove('line-through', 'text-[#6B6B6B]');
+            if (editBtn) editBtn.classList.remove('hidden');
+        }
+    }
 }
 
 async function promoteTask(id, btn) {
