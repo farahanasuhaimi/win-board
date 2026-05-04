@@ -16,6 +16,13 @@ class DashboardController extends Controller
 
         $commit = DailyCommit::where('user_id', $user->id)->where('date', $today)->first();
 
+        // Undone Should tasks from previous days escalate to Must
+        Task::where('user_id', $user->id)
+            ->where('date', '<', $today)
+            ->where('done', false)
+            ->where('section', 'should')
+            ->update(['section' => 'must']);
+
         $todayTasks = Task::where('user_id', $user->id)
             ->where('date', $today)
             ->orderBy('done')
