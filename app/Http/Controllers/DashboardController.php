@@ -26,7 +26,7 @@ class DashboardController extends Controller
         $carryForward = Task::where('user_id', $user->id)
             ->where('date', '<', $today)
             ->where('done', false)
-            ->whereIn('section', ['must', 'should', 'park'])
+            ->whereIn('section', ['must', 'should', 'good', 'park'])
             ->orderBy('date')
             ->get()
             ->each(function ($task) use ($today) {
