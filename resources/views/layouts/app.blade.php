@@ -6,6 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Daily Win Board')</title>
 
+    {{-- PWA --}}
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="WinBoard">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icons/icon.svg">
+
     {{-- Open Graph --}}
     <meta property="og:title" content="Daily Win Board">
     <meta property="og:description" content="A commitment-first, dopamine-driven daily board. Lock in your one non-negotiable, prioritise ruthlessly, and track your wins.">
@@ -70,5 +80,10 @@
 <div id="toast" class="hidden fixed top-4 right-4 bg-white border-2 border-black rounded-[6px] px-5 py-4 font-bold text-[15px] z-50" style="box-shadow: 4px 4px 0 #000;"></div>
 
 @yield('scripts')
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
 </body>
 </html>

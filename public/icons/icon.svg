@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#000000"/>
+  <!-- Bold checkmark -->
+  <path d="M 104 268 L 210 374 L 408 148"
+        stroke="#ffffff" stroke-width="56"
+        stroke-linecap="round" stroke-linejoin="round"
+        fill="none"/>
+  <!-- Orange accent dot at tip -->
+  <circle cx="408" cy="148" r="30" fill="#FF4F00"/>
+</svg>

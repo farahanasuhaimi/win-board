@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed background for maskable (no border-radius) -->
+  <rect width="512" height="512" fill="#000000"/>
+  <!-- Checkmark scaled to safe zone (content within ~76–436px) -->
+  <path d="M 136 278 L 226 368 L 388 172"
+        stroke="#ffffff" stroke-width="52"
+        stroke-linecap="round" stroke-linejoin="round"
+        fill="none"/>
+  <!-- Orange accent dot -->
+  <circle cx="388" cy="172" r="26" fill="#FF4F00"/>
+</svg>
