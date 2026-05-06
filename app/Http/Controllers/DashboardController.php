@@ -23,6 +23,13 @@ class DashboardController extends Controller
             ->where('section', 'should')
             ->update(['section' => 'must']);
 
+        // Parking lot tasks roll forward to today
+        Task::where('user_id', $user->id)
+            ->where('date', '<', $today)
+            ->where('done', false)
+            ->where('section', 'park')
+            ->update(['date' => $today]);
+
         $todayTasks = Task::where('user_id', $user->id)
             ->where('date', $today)
             ->orderBy('done')

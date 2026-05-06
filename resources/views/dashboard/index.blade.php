@@ -36,23 +36,6 @@
         </div>
     </div>
     <div id="commit-form" class="{{ $commit && $commit->isLocked() ? 'hidden' : '' }}">
-        @php $mustOptions = ($tasks['must'] ?? collect())->where('done', false); @endphp
-        @if($mustOptions->count() > 0)
-        <div class="mb-3">
-            <p class="text-xs text-[#6B6B6B] font-bold uppercase tracking-wide mb-2">Pick from your Must tasks</p>
-            <div class="flex flex-col gap-2">
-                @foreach($mustOptions as $mustTask)
-                <button type="button"
-                    onclick="selectCommitTask({{ $mustTask->id }}, {{ json_encode($mustTask->text) }})"
-                    class="commit-option text-left text-sm font-medium px-3 py-2 border-2 border-black rounded-[4px] hover:bg-black hover:text-white transition-colors"
-                    data-id="{{ $mustTask->id }}">
-                    {{ $mustTask->text }}
-                </button>
-                @endforeach
-            </div>
-            <p class="text-xs text-[#6B6B6B] font-bold uppercase tracking-wide mt-3 mb-2">Or type your own intention</p>
-        </div>
-        @endif
         <div class="flex gap-3">
             <input type="text"
                    id="commit-input"
@@ -110,9 +93,9 @@
                                 : (int) $task->date->diffInDays(\Carbon\Carbon::today());
                         @endphp
                         @if($daysLate >= 2)
-                            <span class="text-[10px] font-bold bg-[#FF4F00] text-white px-2 py-0.5 rounded-[3px] shrink-0">🚨 URGENT</span>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-[#FF4F00] text-white px-2 py-0.5 rounded-[3px] shrink-0 leading-none">🚨 URGENT</span>
                         @elseif($daysLate >= 1)
-                            <span class="text-[10px] font-bold bg-[#FFC900] text-black px-2 py-0.5 rounded-[3px] shrink-0">⚠️ LATE</span>
+                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-[#FFC900] text-black px-2 py-0.5 rounded-[3px] shrink-0 leading-none">⚠️ LATE</span>
                         @endif
                         @if($key !== 'must' && !$task->done)
                             <div class="relative move-wrap">
@@ -193,7 +176,6 @@
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const toastMessages = ['Done! Keep going 🔥', 'Yes! That counts!', 'One more win!', 'You showed up.', 'Progress! ⭐'];
 const commitTaskId = {{ $commitTaskId ?? 'null' }};
-let selectedCommitTaskId = null;
 const sectionLabels = {
     should: '🟡 Should Do Today',
     good:   '🟢 Good To Do',
@@ -212,23 +194,12 @@ function showToast(msg) {
     setTimeout(() => t.classList.add('hidden'), 1500);
 }
 
-function selectCommitTask(taskId, text) {
-    selectedCommitTaskId = taskId;
-    document.getElementById('commit-input').value = text;
-    document.querySelectorAll('.commit-option').forEach(btn => {
-        const isSelected = parseInt(btn.dataset.id) === taskId;
-        btn.classList.toggle('bg-black', isSelected);
-        btn.classList.toggle('text-white', isSelected);
-    });
-}
-
 async function lockCommit() {
     const input = document.getElementById('commit-input');
     const text = input.value.trim();
     if (!text) return;
 
     const body = { text };
-    if (selectedCommitTaskId) body.task_id = selectedCommitTaskId;
 
     const res = await fetch('{{ route("commit.store") }}', {
         method: 'POST',
@@ -250,7 +221,6 @@ async function unlockCommit() {
         headers: { 'X-CSRF-TOKEN': csrfToken }
     });
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
-    selectedCommitTaskId = null;
     document.getElementById('commit-locked').classList.add('hidden');
     document.getElementById('commit-form').classList.remove('hidden');
     document.getElementById('commit-input').value = document.getElementById('commit-text').textContent;
