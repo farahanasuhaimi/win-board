@@ -93,9 +93,9 @@
                                 : (int) $task->date->diffInDays(\Carbon\Carbon::today());
                         @endphp
                         @if($daysLate >= 2)
-                            <span class="text-[10px] font-bold bg-[#FF4F00] text-white px-2 py-0.5 rounded-[3px] shrink-0">URGENT</span>
+                            <span class="inline-flex items-center overflow-hidden gap-0.5 h-5 text-[10px] font-bold bg-[#FF4F00] text-white px-2 rounded-[3px] shrink-0">🚨 URGENT</span>
                         @elseif($daysLate >= 1)
-                            <span class="text-[10px] font-bold bg-[#FFC900] text-black px-2 py-0.5 rounded-[3px] shrink-0">LATE</span>
+                            <span class="inline-flex items-center overflow-hidden gap-0.5 h-5 text-[10px] font-bold bg-[#FFC900] text-black px-2 rounded-[3px] shrink-0">⚠️ LATE</span>
                         @endif
                         @if($key !== 'must' && !$task->done)
                             <div class="relative move-wrap">
