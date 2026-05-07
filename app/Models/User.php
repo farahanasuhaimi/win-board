@@ -25,6 +25,9 @@ class User extends Authenticatable
         'google_id',
         'avatar',
         'is_admin',
+        'google_access_token',
+        'google_refresh_token',
+        'google_token_expires_at',
     ];
 
     public function stat()
@@ -50,8 +53,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at'       => 'datetime',
+            'password'                => 'hashed',
+            'google_token_expires_at' => 'datetime',
         ];
     }
 }

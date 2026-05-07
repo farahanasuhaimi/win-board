@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DailyCommit;
 use App\Models\Task;
 use App\Models\UserStat;
+use App\Services\GoogleCalendarService;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -65,7 +66,17 @@ class DashboardController extends Controller
         $commitTaskId = $commit?->task_id;
         $commitDone   = $commitTaskId ? (bool) Task::find($commitTaskId)?->done : false;
 
-        return view('dashboard.index', compact('commit', 'tasks', 'stat', 'winsToday', 'today', 'commitTaskId', 'commitDone'));
+        $calendarEvents = (new GoogleCalendarService())->getTodayEvents($user);
+
+        // Total meeting minutes for free-time calculation
+        $meetingMinutes = collect($calendarEvents)
+            ->where('all_day', false)
+            ->sum('duration');
+
+        return view('dashboard.index', compact(
+            'commit', 'tasks', 'stat', 'winsToday', 'today',
+            'commitTaskId', 'commitDone', 'calendarEvents', 'meetingMinutes'
+        ));
     }
 
     public function reset()

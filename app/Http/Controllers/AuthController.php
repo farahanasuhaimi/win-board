@@ -11,20 +11,32 @@ class AuthController extends Controller
 {
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        return Socialite::driver('google')
+            ->stateless()
+            ->scopes(['https://www.googleapis.com/auth/calendar.readonly'])
+            ->with(['access_type' => 'offline', 'prompt' => 'consent select_account'])
+            ->redirect();
     }
 
     public function handleGoogleCallback()
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
+        $updateData = [
+            'name'                    => $googleUser->getName(),
+            'email'                   => $googleUser->getEmail(),
+            'avatar'                  => $googleUser->getAvatar(),
+            'google_access_token'     => $googleUser->token,
+            'google_token_expires_at' => now()->addSeconds($googleUser->expiresIn ?? 3600),
+        ];
+
+        if ($googleUser->refreshToken) {
+            $updateData['google_refresh_token'] = $googleUser->refreshToken;
+        }
+
         $user = User::updateOrCreate(
             ['google_id' => $googleUser->getId()],
-            [
-                'name' => $googleUser->getName(),
-                'email' => $googleUser->getEmail(),
-                'avatar' => $googleUser->getAvatar(),
-            ]
+            $updateData
         );
 
         UserStat::firstOrCreate(['user_id' => $user->id]);
