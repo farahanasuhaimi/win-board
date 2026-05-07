@@ -40,6 +40,7 @@ Daily Win Board fixes this with three mechanisms:
 - ⏱️ **Task time estimates** — optional on all sections, required on Must; dropdown (10m/30m/1h/2h/6h); running total shown in Must header; overload warning when Must exceeds 12 hours
 - 📱 **PWA** — installable on mobile (manifest + service worker); install prompt on login page
 - 📱 **Mobile responsive** — two-row navbar, task action buttons always visible on touch
+- 📅 **Google Calendar strip** — today's schedule from all your Google Calendars shown on the dashboard; loads async so the board is never blocked
 
 ---
 
@@ -143,7 +144,7 @@ For production, add your live domain as an additional authorised redirect URI.
 ## Database Schema
 
 ```
-users               — Google OAuth users (name, email, google_id, avatar, is_admin)
+users               — Google OAuth users (name, email, google_id, avatar, is_admin, google_access_token, google_refresh_token, google_token_expires_at)
 daily_commits       — One non-negotiable per day per user (text, task_id FK nullable, locked_at)
 tasks               — All tasks across all sections and dates (soft deletes, done_at, estimated_minutes nullable)
 user_stats          — Streak and total win counts
@@ -153,15 +154,16 @@ user_stats          — Streak and total win counts
 
 ## Google Calendar Setup
 
-Calendar integration is built but requires one-time setup:
+One-time setup required per user:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/) → your project
 2. Enable the **Google Calendar API** (APIs & Services → Library → search "Google Calendar API")
-3. Your existing OAuth credentials will work — no new client ID needed
-4. Deploy to Hostinger and run `php artisan migrate`
-5. **Re-login with Google** — the app now requests `calendar.readonly` scope, so existing sessions need to re-authorize to hand over the refresh token
+3. Go to **Google Auth Platform → Audience** → add your Gmail as a test user (or publish the app)
+4. Your existing OAuth credentials will work — no new client ID needed
+5. Run `php artisan migrate` (adds `google_access_token`, `google_refresh_token`, `google_token_expires_at` to users)
+6. **Re-login with Google** — the OAuth flow now requests `calendar.readonly` scope to save the refresh token
 
-Once re-logged in, the dashboard will show today's schedule automatically.
+Once logged in, the dashboard fetches today's events from **all your Google Calendars** asynchronously — the board loads first, the schedule strip fills in after.
 
 ---
 
@@ -213,6 +215,7 @@ UPDATE users SET is_admin = 1 WHERE email = 'your@email.com';
 - [x] Task time estimates — 10m/30m/1h/2h/6h dropdown; required on Must, optional elsewhere
 - [x] Must overload warning — banner fires when total Must estimate exceeds 12 hours
 - [x] Done task persistence — carry-forward tasks completed today stay visible until tomorrow
+- [x] Google Calendar strip — today's events from all calendars; async load, meeting vs Must free-time indicator
 
 ### Phase 3 — Goal Cascade (planned)
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily

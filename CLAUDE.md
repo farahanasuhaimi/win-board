@@ -57,7 +57,7 @@ This is the most important section. The entire app must feel like **Gumroad** �
 ## Database Schema
 
 ```sql
-users:         id, name, email, google_id, avatar, is_admin (bool), created_at
+users:         id, name, email, google_id, avatar, is_admin (bool), google_access_token, google_refresh_token, google_token_expires_at, created_at
 daily_commits: id, user_id, text, task_id (FK nullable → tasks), date, locked_at, unlocked_count, created_at
 tasks:         id, user_id, text, section (enum: must/should/good/park), done (bool), date, sort_order, done_at (nullable), estimated_minutes (nullable smallint), created_at, deleted_at
 user_stats:    id, user_id, streak, total_wins, last_active_date, updated_at
@@ -69,6 +69,7 @@ user_stats:    id, user_id, streak, total_wins, last_active_date, updated_at
 
 ```
 GET    /dashboard              → Today's board
+GET    /calendar/events        → Today's Google Calendar events as JSON (async, all calendars)
 POST   /commit                 → Save/lock daily commitment (accepts task_id nullable)
 POST   /commit/unlock          → Unlock commitment for editing
 POST   /tasks                  → Add task
@@ -200,6 +201,17 @@ park   → should, park  → good
 
 ---
 
+## Google Calendar Integration
+
+- `GoogleCalendarService::getTodayEvents(User)` — fetches from all calendars (not just primary)
+- Calendar list fetched first via `/users/me/calendarList`, then one request per calendar
+- Token refresh handled automatically (5-minute pre-expiry window)
+- Dashboard loads without waiting — `/calendar/events` is called via JS fetch after page render
+- Strip only renders if events exist; fails silently on API error
+- Scope required: `calendar.readonly` — user must re-login after scope is added
+
+---
+
 ## Behaviour Notes
 
 - All task mutations: AJAX (fetch API) — no full page reloads
@@ -208,6 +220,7 @@ park   → should, park  → good
 - Mobile: stacked 2×2 grid, two-row navbar (brand + logout top, nav links below)
 - Task action buttons: `opacity-100 md:opacity-0 md:group-hover:opacity-100` — visible on mobile, hover-only on desktop
 - Wins counted by `done_at` throughout (not task.date) for all analytics
+- Google Calendar strip loads async after page render — never blocks the board
 
 ---
 
