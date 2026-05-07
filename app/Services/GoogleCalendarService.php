@@ -17,20 +17,28 @@ class GoogleCalendarService
             $timeMin = now()->startOfDay()->toIso8601String();
             $timeMax = now()->endOfDay()->toIso8601String();
 
-            $response = Http::withToken($token)
-                ->get('https://www.googleapis.com/calendar/v3/calendars/primary/events', [
-                    'timeMin'      => $timeMin,
-                    'timeMax'      => $timeMax,
-                    'singleEvents' => 'true',
-                    'orderBy'      => 'startTime',
-                    'maxResults'   => 20,
-                ]);
+            $calendarIds = $this->getCalendarIds($token);
 
-            if (!$response->ok()) return [];
+            $events = collect();
+            foreach ($calendarIds as $calId) {
+                $response = Http::withToken($token)
+                    ->get('https://www.googleapis.com/calendar/v3/calendars/' . urlencode($calId) . '/events', [
+                        'timeMin'      => $timeMin,
+                        'timeMax'      => $timeMax,
+                        'singleEvents' => 'true',
+                        'orderBy'      => 'startTime',
+                        'maxResults'   => 20,
+                    ]);
 
-            return collect($response->json()['items'] ?? [])
+                if ($response->ok()) {
+                    $events = $events->merge($response->json()['items'] ?? []);
+                }
+            }
+
+            return $events
                 ->map(fn($e) => $this->formatEvent($e))
                 ->filter()
+                ->sortBy('start_time')
                 ->values()
                 ->all();
 
@@ -38,6 +46,18 @@ class GoogleCalendarService
             Log::warning('Google Calendar fetch failed: ' . $e->getMessage());
             return [];
         }
+    }
+
+    private function getCalendarIds(string $token): array
+    {
+        $response = Http::withToken($token)
+            ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+
+        if (!$response->ok()) return ['primary'];
+
+        return collect($response->json()['items'] ?? [])
+            ->pluck('id')
+            ->all();
     }
 
     private function getValidToken(User $user): ?string
