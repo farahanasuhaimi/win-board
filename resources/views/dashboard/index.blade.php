@@ -211,6 +211,7 @@
 @section('scripts')
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+const showOnboarding = {{ $showOnboarding ? 'true' : 'false' }};
 const toastMessages = ['Done! Keep going 🔥', 'Yes! That counts!', 'One more win!', 'You showed up.', 'Progress! ⭐'];
 const commitTaskId = {{ $commitTaskId ?? 'null' }};
 const sectionLabels = {
@@ -558,8 +559,7 @@ function updateMustTotal() {
 }
 
 // Onboarding modal
-@if($showOnboarding)
-(function() {
+if (showOnboarding) (function() {
     const slides = [
         {
             emoji: '👋',
@@ -621,7 +621,6 @@ function updateMustTotal() {
     render();
     document.body.appendChild(overlay);
 })();
-@endif
 
 // Load calendar strip async so dashboard renders immediately
 (async function loadCalendar() {
