@@ -23,6 +23,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Protected routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/calendar/events', [DashboardController::class, 'calendarEvents'])->name('calendar.events');
     Route::post('/day/reset', [DashboardController::class, 'reset'])->name('day.reset');
 
     Route::post('/commit', [CommitController::class, 'store'])->name('commit.store');

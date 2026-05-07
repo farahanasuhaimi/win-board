@@ -66,17 +66,18 @@ class DashboardController extends Controller
         $commitTaskId = $commit?->task_id;
         $commitDone   = $commitTaskId ? (bool) Task::find($commitTaskId)?->done : false;
 
-        $calendarEvents = (new GoogleCalendarService())->getTodayEvents($user);
-
-        // Total meeting minutes for free-time calculation
-        $meetingMinutes = collect($calendarEvents)
-            ->where('all_day', false)
-            ->sum('duration');
-
         return view('dashboard.index', compact(
             'commit', 'tasks', 'stat', 'winsToday', 'today',
-            'commitTaskId', 'commitDone', 'calendarEvents', 'meetingMinutes'
+            'commitTaskId', 'commitDone'
         ));
+    }
+
+    public function calendarEvents()
+    {
+        $user = Auth::user();
+        $events = (new GoogleCalendarService())->getTodayEvents($user);
+        $meetingMinutes = collect($events)->where('all_day', false)->sum('duration');
+        return response()->json(['events' => $events, 'meeting_minutes' => $meetingMinutes]);
     }
 
     public function reset()

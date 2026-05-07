@@ -50,59 +50,8 @@
     </div>
 </div>
 
-{{-- Google Calendar strip --}}
-@if(count($calendarEvents) > 0)
-<div class="card mb-6" style="box-shadow: var(--shadow-hard-sm);">
-    <div class="flex items-center justify-between mb-3">
-        <span class="text-xs font-bold uppercase tracking-widest text-[#6B6B6B]">Today's Schedule</span>
-        @php
-            $freeMinutes = max(0, 480 - $meetingMinutes); // 8h working day baseline
-            $mustTotal = ($tasks['must'] ?? collect())->where('done', false)->sum('estimated_minutes');
-        @endphp
-        @if($meetingMinutes > 0)
-            <span class="text-[11px] font-mono text-[#6B6B6B]">
-                {{ $meetingMinutes < 60 ? $meetingMinutes.'m' : floor($meetingMinutes/60).'h'.($meetingMinutes%60 > 0 ? ' '.($meetingMinutes%60).'m' : '') }} in meetings
-                @if($mustTotal > 0)
-                    ·
-                    @if($mustTotal <= $freeMinutes)
-                        <span class="text-[#23A094]">Must fits ✓</span>
-                    @else
-                        <span class="text-[#E24B4A]">Must won't fit ✗</span>
-                    @endif
-                @endif
-            </span>
-        @endif
-    </div>
-
-    {{-- All-day events --}}
-    @php $allDay = collect($calendarEvents)->where('all_day', true); @endphp
-    @if($allDay->count())
-        <div class="flex flex-wrap gap-2 mb-2">
-            @foreach($allDay as $event)
-                <span class="text-[11px] font-medium bg-[#F4F4F0] border border-black px-2 py-0.5 rounded-[3px]">{{ $event['title'] }}</span>
-            @endforeach
-        </div>
-    @endif
-
-    {{-- Timed events --}}
-    @php $timed = collect($calendarEvents)->where('all_day', false); @endphp
-    @if($timed->count())
-        <div class="space-y-1.5">
-            @foreach($timed as $event)
-                <div class="flex items-center gap-3">
-                    <span class="text-[11px] font-mono text-[#6B6B6B] shrink-0 w-24">{{ $event['start_time'] }} – {{ $event['end_time'] }}</span>
-                    <span class="text-[13px] font-medium truncate">{{ $event['title'] }}</span>
-                    @if($event['duration'])
-                        <span class="text-[11px] font-mono text-[#B0B0A8] shrink-0 ml-auto">
-                            {{ $event['duration'] < 60 ? $event['duration'].'m' : floor($event['duration']/60).'h'.($event['duration']%60 > 0 ? ' '.($event['duration']%60).'m' : '') }}
-                        </span>
-                    @endif
-                </div>
-            @endforeach
-        </div>
-    @endif
-</div>
-@endif
+{{-- Google Calendar strip (loaded async) --}}
+<div id="calendar-strip" class="mb-6"></div>
 
 {{-- Task Board 2×2 grid --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -607,5 +556,61 @@ function updateMustTotal() {
     if (totalEl)   totalEl.textContent = total > 0 ? formatMinutes(total) : '';
     if (warningEl) warningEl.classList.toggle('hidden', total <= 720);
 }
+
+// Load calendar strip async so dashboard renders immediately
+(async function loadCalendar() {
+    const strip = document.getElementById('calendar-strip');
+    try {
+        const res = await fetch('{{ route("calendar.events") }}');
+        const { events, meeting_minutes } = await res.json();
+        if (!events.length) return;
+
+        const allDay = events.filter(e => e.all_day);
+        const timed  = events.filter(e => !e.all_day);
+        const mustTotal = Array.from(document.querySelectorAll('#task-list-must .task-item:not(.opacity-50)'))
+            .reduce((s, li) => s + parseInt(li.dataset.estimate || 0), 0);
+        const freeMinutes = Math.max(0, 480 - meeting_minutes);
+
+        let meetingHtml = '';
+        if (meeting_minutes > 0) {
+            const mLabel = formatMinutes(meeting_minutes);
+            let fitHtml = '';
+            if (mustTotal > 0) {
+                fitHtml = mustTotal <= freeMinutes
+                    ? ' · <span class="text-[#23A094]">Must fits ✓</span>'
+                    : ' · <span class="text-[#E24B4A]">Must won\'t fit ✗</span>';
+            }
+            meetingHtml = `<span class="text-[11px] font-mono text-[#6B6B6B]">${mLabel} in meetings${fitHtml}</span>`;
+        }
+
+        const allDayHtml = allDay.length
+            ? `<div class="flex flex-wrap gap-2 mb-2">${allDay.map(e =>
+                `<span class="text-[11px] font-medium bg-[#F4F4F0] border border-black px-2 py-0.5 rounded-[3px]">${escapeHtml(e.title)}</span>`
+              ).join('')}</div>`
+            : '';
+
+        const timedHtml = timed.length
+            ? `<div class="space-y-1.5">${timed.map(e =>
+                `<div class="flex items-center gap-3">
+                    <span class="text-[11px] font-mono text-[#6B6B6B] shrink-0 w-24">${e.start_time} – ${e.end_time}</span>
+                    <span class="text-[13px] font-medium truncate">${escapeHtml(e.title)}</span>
+                    ${e.duration ? `<span class="text-[11px] font-mono text-[#B0B0A8] shrink-0 ml-auto">${formatMinutes(e.duration)}</span>` : ''}
+                </div>`
+              ).join('')}</div>`
+            : '';
+
+        strip.innerHTML = `
+            <div class="card" style="box-shadow: var(--shadow-hard-sm);">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-bold uppercase tracking-widest text-[#6B6B6B]">Today's Schedule</span>
+                    ${meetingHtml}
+                </div>
+                ${allDayHtml}
+                ${timedHtml}
+            </div>`;
+    } catch (e) {
+        // Calendar unavailable — fail silently
+    }
+})();
 </script>
 @endsection
