@@ -66,10 +66,18 @@ class DashboardController extends Controller
         $commitTaskId = $commit?->task_id;
         $commitDone   = $commitTaskId ? (bool) Task::find($commitTaskId)?->done : false;
 
+        $showOnboarding = !$user->onboarded_at;
+
         return view('dashboard.index', compact(
             'commit', 'tasks', 'stat', 'winsToday', 'today',
-            'commitTaskId', 'commitDone'
+            'commitTaskId', 'commitDone', 'showOnboarding'
         ));
+    }
+
+    public function completeOnboarding()
+    {
+        Auth::user()->update(['onboarded_at' => now()]);
+        return response()->json(['ok' => true]);
     }
 
     public function calendarEvents()

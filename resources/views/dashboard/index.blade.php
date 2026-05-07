@@ -557,6 +557,72 @@ function updateMustTotal() {
     if (warningEl) warningEl.classList.toggle('hidden', total <= 720);
 }
 
+// Onboarding modal
+@if($showOnboarding)
+(function() {
+    const slides = [
+        {
+            emoji: '👋',
+            title: 'Welcome to Daily Win Board',
+            body: 'This is not another todo list. It\'s a <strong>commitment-first execution system</strong> — built to make you actually show up and do the things that matter.',
+        },
+        {
+            emoji: '📋',
+            title: 'Four tiers. One day.',
+            body: '<strong>Must Do</strong> — max 3. Non-negotiable.<br><strong>Should Do</strong> — up to 5. Important but flexible.<br><strong>Good To Do</strong> — nice if you get there.<br><strong>Parking Lot</strong> — not today, not forgotten.',
+        },
+        {
+            emoji: '🔒',
+            title: 'Lock in. Win. Streak.',
+            body: 'Start every day by locking in your <strong>one non-negotiable</strong>. Tick things off to earn wins. Build your streak. That\'s the whole loop.',
+        },
+    ];
+
+    let current = 0;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'onboarding-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+
+    function render() {
+        const s = slides[current];
+        const isLast = current === slides.length - 1;
+        const dots = slides.map((_, i) =>
+            `<span style="width:8px;height:8px;border-radius:50%;background:${i === current ? '#000' : '#D0D0C8'};display:inline-block;"></span>`
+        ).join('');
+
+        overlay.innerHTML = `
+            <div style="background:#fff;border:2px solid #000;border-radius:6px;box-shadow:6px 6px 0 #000;max-width:440px;width:100%;padding:2rem;">
+                <div style="font-size:2.5rem;margin-bottom:1rem;">${s.emoji}</div>
+                <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;margin-bottom:0.75rem;">${s.title}</div>
+                <div style="font-size:0.9rem;line-height:1.6;color:#3a3a3a;margin-bottom:1.5rem;">${s.body}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;gap:6px;align-items:center;">${dots}</div>
+                    <button id="onboarding-next" style="background:#000;color:#fff;border:2px solid #000;border-radius:4px;padding:10px 24px;font-weight:700;font-size:0.875rem;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.02em;">
+                        ${isLast ? "Let's go →" : 'Next →'}
+                    </button>
+                </div>
+            </div>`;
+
+        document.getElementById('onboarding-next').onclick = async () => {
+            if (current < slides.length - 1) {
+                current++;
+                render();
+            } else {
+                await fetch('{{ route("onboarding.complete") }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                });
+                overlay.remove();
+            }
+        };
+    }
+
+    render();
+    document.body.appendChild(overlay);
+})();
+@endif
+
 // Load calendar strip async so dashboard renders immediately
 (async function loadCalendar() {
     const strip = document.getElementById('calendar-strip');
