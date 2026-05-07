@@ -151,6 +151,20 @@ user_stats          — Streak and total win counts
 
 ---
 
+## Google Calendar Setup
+
+Calendar integration is built but requires one-time setup:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → your project
+2. Enable the **Google Calendar API** (APIs & Services → Library → search "Google Calendar API")
+3. Your existing OAuth credentials will work — no new client ID needed
+4. Deploy to Hostinger and run `php artisan migrate`
+5. **Re-login with Google** — the app now requests `calendar.readonly` scope, so existing sessions need to re-authorize to hand over the refresh token
+
+Once re-logged in, the dashboard will show today's schedule automatically.
+
+---
+
 ## Deployment (Hostinger)
 
 1. Push via Git, then `git pull origin main` on server
