@@ -69,24 +69,42 @@
         <div class="card" style="box-shadow: var(--shadow-hard); border-left: 4px solid {{ $meta['color'] }}; padding-left: 1rem;">
             {{-- Section header --}}
             <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <span class="font-display font-extrabold text-[13px] uppercase tracking-wider">{{ $meta['label'] }}</span>
                     <span class="bg-black text-white text-[11px] font-bold px-2 py-0.5 rounded-[3px] font-mono" id="count-{{ $key }}">
                         {{ $activeCount }}{{ $meta['limit'] ? '/'.$meta['limit'] : '' }}
                     </span>
+                    @if($key === 'must')
+                        @php $mustTotal = ($tasks['must'] ?? collect())->where('done', false)->sum('estimated_minutes'); @endphp
+                        <span class="text-[11px] text-[#B0B0A8] font-mono" id="must-total">{{ $mustTotal > 0 ? ($mustTotal < 60 ? $mustTotal.'m' : floor($mustTotal/60).'h'.($mustTotal%60 > 0 ? ' '.($mustTotal%60).'m' : '')) : '' }}</span>
+                    @endif
                 </div>
             </div>
+            @if($key === 'must')
+            <div id="must-overload" class="{{ ($tasks['must'] ?? collect())->where('done', false)->sum('estimated_minutes') > 720 ? '' : 'hidden' }} text-[11px] font-bold text-[#E24B4A] border border-[#E24B4A] rounded-[4px] px-3 py-2 mb-3">
+                That's over 12 hours — too much for one day.
+            </div>
+            @endif
 
             {{-- Task list --}}
             <ul class="space-y-2 mb-4 min-h-[60px]" id="task-list-{{ $key }}">
                 @forelse($sectionTasks as $task)
-                    <li class="task-item flex items-center gap-3 group {{ $task->done ? 'opacity-50' : '' }}" data-id="{{ $task->id }}" data-section="{{ $key }}">
+                    @php
+                        $estLabel = match((int)($task->estimated_minutes ?? 0)) {
+                            10 => '10m', 30 => '30m', 60 => '1h', 120 => '2h', 360 => '6h',
+                            default => null
+                        };
+                    @endphp
+                    <li class="task-item flex items-center gap-3 group {{ $task->done ? 'opacity-50' : '' }}" data-id="{{ $task->id }}" data-section="{{ $key }}" data-estimate="{{ $task->estimated_minutes ?? 0 }}">
                         <button onclick="toggleTask({{ $task->id }}, this)" class="flex-shrink-0 w-5 h-5 border-2 border-black rounded-[3px] flex items-center justify-center cursor-pointer hover:bg-black/10 transition-colors {{ $task->done ? 'bg-black' : '' }}">
                             @if($task->done)
                                 <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" fill="none"/></svg>
                             @endif
                         </button>
                         <span class="flex-1 min-w-0 text-[15px] {{ $task->done ? 'line-through text-[#6B6B6B]' : '' }}">{{ $task->text }}</span>
+                        @if($estLabel)
+                            <span class="text-[11px] text-[#B0B0A8] font-mono shrink-0">{{ $estLabel }}</span>
+                        @endif
                         @php
                             $daysLate = ($task->done || $task->section === 'park')
                                 ? 0
@@ -138,9 +156,17 @@
             <div class="flex gap-2" id="add-{{ $key }}-wrap">
                 <input type="text"
                        id="add-{{ $key }}"
-                       class="input text-sm"
+                       class="input text-sm flex-1"
                        placeholder="Add task..."
                        onkeydown="if(event.key==='Enter') addTask('{{ $key }}')">
+                <select id="est-{{ $key }}" class="input text-[12px]" style="padding: 8px 6px; width: auto; min-width: 0;">
+                    <option value="">{{ $key === 'must' ? 'Time*' : '—' }}</option>
+                    <option value="10">10m</option>
+                    <option value="30">30m</option>
+                    <option value="60">1h</option>
+                    <option value="120">2h</option>
+                    <option value="360">6h</option>
+                </select>
                 <button onclick="addTask('{{ $key }}')" class="btn text-sm" style="padding: 8px 14px; white-space: nowrap;">+</button>
             </div>
             <div id="error-{{ $key }}" class="hidden text-[#E24B4A] text-xs font-bold mt-2"></div>
@@ -235,17 +261,28 @@ async function unlockCommit() {
 }
 
 async function addTask(section) {
-    const input = document.getElementById('add-' + section);
-    const errorEl = document.getElementById('error-' + section);
-    const text = input.value.trim();
+    const input    = document.getElementById('add-' + section);
+    const estSel   = document.getElementById('est-' + section);
+    const errorEl  = document.getElementById('error-' + section);
+    const text     = input.value.trim();
+    const estimate = estSel ? estSel.value : '';
     if (!text) return;
 
+    if (section === 'must' && !estimate) {
+        errorEl.textContent = 'Set a time estimate for Must tasks.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
     errorEl.classList.add('hidden');
+
+    const body = { text, section };
+    if (estimate) body.estimated_minutes = parseInt(estimate);
 
     const res = await fetch('{{ route("tasks.store") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-        body: JSON.stringify({ text, section })
+        body: JSON.stringify(body)
     });
     const data = await res.json();
 
@@ -256,19 +293,24 @@ async function addTask(section) {
     }
 
     input.value = '';
+    if (estSel) estSel.value = '';
     appendTask(data, section);
     updateCount(section);
     removePlaceholder(section);
+    if (section === 'must') updateMustTotal();
 }
 
 function appendTask(task, section) {
     const list = document.getElementById('task-list-' + section);
     const li = document.createElement('li');
     li.className = 'task-item flex items-center gap-3 group';
-    li.dataset.id = task.id;
-    li.dataset.section = section;
+    li.dataset.id       = task.id;
+    li.dataset.section  = section;
+    li.dataset.estimate = task.estimated_minutes || 0;
 
-    const promoteBtn = '';
+    const estHtml = formatEstimate(task.estimated_minutes)
+        ? `<span class="text-[11px] text-[#B0B0A8] font-mono shrink-0">${formatEstimate(task.estimated_minutes)}</span>`
+        : '';
 
     const moveOptions = (moveTargets[section] || [])
         .map(k => `<button onclick="moveTask(${task.id}, '${k}', this)" class="block w-full text-left px-3 py-2 hover:bg-black hover:text-white whitespace-nowrap">${sectionLabels[k]}</button>`)
@@ -281,8 +323,8 @@ function appendTask(task, section) {
 
     li.innerHTML = `
         <button onclick="toggleTask(${task.id}, this)" class="flex-shrink-0 w-5 h-5 border-2 border-black rounded-[3px] flex items-center justify-center cursor-pointer hover:bg-black/10 transition-colors"></button>
-        <span class="flex-1 text-[15px]">${escapeHtml(task.text)}</span>
-        ${promoteBtn}
+        <span class="flex-1 min-w-0 text-[15px]">${escapeHtml(task.text)}</span>
+        ${estHtml}
         ${moveBtn}
         ${section === 'must'
             ? `<button onclick="deleteMustTask(${task.id}, this)" class="opacity-30 hover:opacity-70 text-[#E24B4A] text-lg leading-none font-bold ml-1">×</button>`
@@ -320,6 +362,7 @@ async function toggleTask(id, btn) {
     }
 
     updateCount(li.dataset.section);
+    if (li.dataset.section === 'must') updateMustTotal();
 
     if (commitTaskId && id === commitTaskId) {
         const icon    = document.getElementById('commit-icon');
@@ -364,6 +407,7 @@ async function deleteTask(id, btn) {
 
     li.remove();
     updateCount(section);
+    if (section === 'must') updateMustTotal();
 }
 
 async function moveTask(id, targetSection, btn) {
@@ -384,12 +428,14 @@ async function moveTask(id, targetSection, btn) {
         return;
     }
 
-    const text = li.querySelector('span').textContent;
+    const text     = li.querySelector('span').textContent;
+    const estimate = parseInt(li.dataset.estimate || 0);
     li.remove();
-    appendTask({ id, text }, targetSection);
+    appendTask({ id, text, estimated_minutes: estimate }, targetSection);
     removePlaceholder(targetSection);
     updateCount(fromSection);
     updateCount(targetSection);
+    if (fromSection === 'must' || targetSection === 'must') updateMustTotal();
     showToast('Moved ✓');
 }
 
@@ -450,12 +496,14 @@ async function mustTaskPark() {
 
     if (!res.ok) { const d = await res.json(); alert(d.error); return; }
 
-    const text = li.querySelector('span').textContent;
+    const text     = li.querySelector('span').textContent;
+    const estimate = parseInt(li.dataset.estimate || 0);
     li.remove();
-    appendTask({ id, text }, 'park');
+    appendTask({ id, text, estimated_minutes: estimate }, 'park');
     removePlaceholder('park');
     updateCount('must');
     updateCount('park');
+    updateMustTotal();
     showToast('Parked 🅿️');
 }
 
@@ -479,6 +527,31 @@ async function confirmReset() {
 
 function escapeHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatEstimate(mins) {
+    const map = { 10: '10m', 30: '30m', 60: '1h', 120: '2h', 360: '6h' };
+    return map[parseInt(mins)] || null;
+}
+
+function formatMinutes(mins) {
+    if (mins < 60) return mins + 'm';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+function updateMustTotal() {
+    const list = document.getElementById('task-list-must');
+    if (!list) return;
+    let total = 0;
+    list.querySelectorAll('.task-item:not(.opacity-50)').forEach(li => {
+        total += parseInt(li.dataset.estimate || 0);
+    });
+    const totalEl   = document.getElementById('must-total');
+    const warningEl = document.getElementById('must-overload');
+    if (totalEl)   totalEl.textContent = total > 0 ? formatMinutes(total) : '';
+    if (warningEl) warningEl.classList.toggle('hidden', total <= 720);
 }
 </script>
 @endsection

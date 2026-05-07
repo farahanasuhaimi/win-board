@@ -11,10 +11,15 @@ class TaskController extends Controller
 {
     public function store(Request $request)
     {
-        $request->validate([
-            'text' => 'required|string|max:500',
+        $rules = [
+            'text'    => 'required|string|max:500',
             'section' => 'required|in:must,should,good,park',
-        ]);
+            'estimated_minutes' => 'nullable|integer|in:10,30,60,120,360',
+        ];
+        if ($request->section === 'must') {
+            $rules['estimated_minutes'] = 'required|integer|in:10,30,60,120,360';
+        }
+        $request->validate($rules);
 
         $user = Auth::user();
         $today = now()->toDateString();
@@ -31,11 +36,12 @@ class TaskController extends Controller
         }
 
         $task = Task::create([
-            'user_id' => $user->id,
-            'text' => $request->text,
-            'section' => $request->section,
-            'date' => $today,
-            'sort_order' => Task::where('user_id', $user->id)->where('date', $today)->where('section', $request->section)->count(),
+            'user_id'            => $user->id,
+            'text'               => $request->text,
+            'section'            => $request->section,
+            'date'               => $today,
+            'sort_order'         => Task::where('user_id', $user->id)->where('date', $today)->where('section', $request->section)->count(),
+            'estimated_minutes'  => $request->estimated_minutes,
         ]);
 
         return response()->json($task);
