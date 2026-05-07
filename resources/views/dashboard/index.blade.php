@@ -604,7 +604,7 @@ if (showOnboarding) (function() {
                 </div>
             </div>`;
 
-        document.getElementById('onboarding-next').onclick = async () => {
+        overlay.querySelector('#onboarding-next').onclick = async () => {
             if (current < slides.length - 1) {
                 current++;
                 render();
@@ -618,8 +618,8 @@ if (showOnboarding) (function() {
         };
     }
 
-    render();
     document.body.appendChild(overlay);
+    render();
 })();
 
 // Load calendar strip async so dashboard renders immediately
