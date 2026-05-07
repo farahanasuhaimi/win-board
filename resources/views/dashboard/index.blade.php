@@ -86,16 +86,24 @@
                                 <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" fill="none"/></svg>
                             @endif
                         </button>
-                        <span class="flex-1 text-[15px] {{ $task->done ? 'line-through text-[#6B6B6B]' : '' }}">{{ $task->text }}</span>
+                        <span class="flex-1 min-w-0 text-[15px] {{ $task->done ? 'line-through text-[#6B6B6B]' : '' }}">{{ $task->text }}</span>
                         @php
                             $daysLate = ($task->done || $task->section === 'park')
                                 ? 0
                                 : (int) $task->date->diffInDays(\Carbon\Carbon::today());
+                            $urgencyEmoji = match(true) {
+                                $daysLate >= 7 => '💀',
+                                $daysLate >= 6 => '☠️',
+                                $daysLate >= 5 => '🔥',
+                                $daysLate >= 4 => '🚨',
+                                $daysLate >= 3 => '🔴',
+                                $daysLate >= 2 => '🟠',
+                                $daysLate >= 1 => '⚠️',
+                                default        => null,
+                            };
                         @endphp
-                        @if($daysLate >= 2)
-                            <span class="inline-flex items-center overflow-hidden gap-0.5 h-5 text-[10px] font-bold bg-[#FF4F00] text-white px-2 rounded-[3px] shrink-0">🚨 URGENT</span>
-                        @elseif($daysLate >= 1)
-                            <span class="inline-flex items-center overflow-hidden gap-0.5 h-5 text-[10px] font-bold bg-[#FFC900] text-black px-2 rounded-[3px] shrink-0">⚠️ LATE</span>
+                        @if($urgencyEmoji)
+                            <span class="shrink-0 w-5 h-5 flex items-center justify-center text-[14px] leading-none">{{ $urgencyEmoji }}</span>
                         @endif
                         @if($key !== 'must' && !$task->done)
                             <div class="relative move-wrap">
