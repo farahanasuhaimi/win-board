@@ -30,13 +30,15 @@ Daily Win Board fixes this with three mechanisms:
 - ✅ **Win counter + day streak** — tracks consistency, not just completion
 - 🎉 **Celebration toast** — small dopamine hit on every completed task
 - ⇄ **Move between sections** — with enforced rules (can move Must → Parking Lot via confirmation)
-- ⚠️ **Carry-forward with urgency badges** — undone Must/Should/Park tasks reappear next day; Must/Should get Late or Urgent badges
+- ⚠️ **Carry-forward with urgency scale** — undone Must/Should/Park tasks reappear next day; urgency shown as emoji scale ⚠️→🟠→🔴→🚨→🔥→☠️→💀 (1–7+ days overdue)
 - 🗑️ **Must task delete guard** — deleting a Must task prompts: park it first, or delete anyway
 - 📅 **Weekly Review** — Mon–Sun bar chart (wins by completion date), section completion rates
 - 📜 **Win History** — weekly summary cards for completed past weeks
 - 👤 **Admin dashboard** — user management, stats, admin role management
 - 🔄 **Reset Day** — clean slate, no guilt
 - 🔐 **Google OAuth** — one-click login, no passwords
+- ⏱️ **Task time estimates** — optional on all sections, required on Must; dropdown (10m/30m/1h/2h/6h); running total shown in Must header; overload warning when Must exceeds 12 hours
+- 📱 **PWA** — installable on mobile (manifest + service worker); install prompt on login page
 - 📱 **Mobile responsive** — two-row navbar, task action buttons always visible on touch
 
 ---
@@ -143,7 +145,7 @@ For production, add your live domain as an additional authorised redirect URI.
 ```
 users               — Google OAuth users (name, email, google_id, avatar, is_admin)
 daily_commits       — One non-negotiable per day per user (text, task_id FK nullable, locked_at)
-tasks               — All tasks across all sections and dates (soft deletes, done_at timestamp)
+tasks               — All tasks across all sections and dates (soft deletes, done_at, estimated_minutes nullable)
 user_stats          — Streak and total win counts
 ```
 
@@ -191,11 +193,17 @@ UPDATE users SET is_admin = 1 WHERE email = 'your@email.com';
 - [x] Review chart fixed (upward bars, wins by completion date)
 - [x] History redesigned as weekly summary cards
 
+### Phase 2.5 ✅
+- [x] PWA — manifest + service worker, installable on mobile
+- [x] Urgency scale — emoji-only (⚠️→💀) replacing text badges, 7-level daily escalation
+- [x] Task time estimates — 10m/30m/1h/2h/6h dropdown; required on Must, optional elsewhere
+- [x] Must overload warning — banner fires when total Must estimate exceeds 12 hours
+- [x] Done task persistence — carry-forward tasks completed today stay visible until tomorrow
+
 ### Phase 3 — Goal Cascade (planned)
 - [ ] Goal Cascade — 10-year → 5-year → yearly → quarterly → daily
 - [ ] Daily tasks linkable to quarterly goals
 - [ ] Recurring tasks
-- [ ] PWA / installable on mobile
 
 ---
 

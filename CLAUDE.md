@@ -59,7 +59,7 @@ This is the most important section. The entire app must feel like **Gumroad** �
 ```sql
 users:         id, name, email, google_id, avatar, is_admin (bool), created_at
 daily_commits: id, user_id, text, task_id (FK nullable → tasks), date, locked_at, unlocked_count, created_at
-tasks:         id, user_id, text, section (enum: must/should/good/park), done (bool), date, sort_order, done_at (nullable), created_at, deleted_at
+tasks:         id, user_id, text, section (enum: must/should/good/park), done (bool), date, sort_order, done_at (nullable), estimated_minutes (nullable smallint), created_at, deleted_at
 user_stats:    id, user_id, streak, total_wins, last_active_date, updated_at
 ```
 
@@ -112,15 +112,24 @@ POST   /logout                 → Logout
 - Must tasks: × button always dimmed (`opacity-30`); clicking shows confirmation modal
 
 ### 3. Task Completion
-- Checkbox toggle → done state (strikethrough, 50% opacity, moves to bottom)
+- Checkbox toggle → done state (strikethrough, 50% opacity)
 - Celebration toast: rotates through messages, auto-dismisses after 1.5s
+- Done carry-forward tasks stay visible on the board until the next day
 
-### 4. Win Counter + Streak
+### 4. Task Time Estimates
+- Optional on all sections; **required on Must**
+- Choices: `10m`, `30m`, `1h`, `2h`, `6h` (stored as `estimated_minutes`)
+- Displayed dimmed (font-mono) next to task text
+- Must section header shows running total of undone estimates
+- Warning banner fires inside Must card when total exceeds 12 hours
+- Estimate carries through move, park, delete, and toggle operations
+
+### 5. Win Counter + Streak
 - Wins Today: done tasks for today
 - Day Streak: consecutive days with at least one win
 - Stored in `user_stats`
 
-### 5. Reset Day
+### 6. Reset Day
 - Confirmation modal (Gumroad-style)
 - Clears all tasks and commitment for today
 
@@ -146,10 +155,11 @@ park   → should, park  → good
 - Undone `must`, `should`, and `park` tasks carry forward to the next day automatically
 - `good` tasks do NOT carry forward
 - Done tasks do NOT carry forward
-- `must` and `should` carry-forward tasks get urgency badges:
-  - 1 day overdue → `⚠️ LATE` (amber)
-  - 2+ days → `🚨 URGENT` (red)
-- `park` carry-forward tasks get no urgency badges (timeless by design)
+- `must` and `should` carry-forward tasks get an urgency emoji (emoji-only, no text):
+  - 1 day → ⚠️, 2 days → 🟠, 3 days → 🔴, 4 days → 🚨, 5 days → 🔥, 6 days → ☠️, 7+ days → 💀
+  - Rendered in a fixed `w-5 h-5` container for consistent alignment across rows
+- `park` carry-forward tasks get no urgency emoji (timeless by design)
+- Done carry-forward tasks completed today remain visible on the board (`done_at >= today`); cleared tomorrow
 - Must cap (max 3) counts ALL undone must tasks regardless of date
 
 ---
@@ -206,4 +216,3 @@ park   → should, park  → good
 - Goal Cascade: 10-year → 5-year → yearly → quarterly → daily
 - Daily tasks linkable to quarterly goals
 - Recurring tasks
-- PWA / installable on mobile
