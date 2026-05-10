@@ -3,8 +3,10 @@
 @section('title', 'Dashboard — Daily Win Board')
 
 @section('content')
-{{-- HUD strip --}}
-<div class="mb-6 border-2 border-black rounded-[4px] px-4 py-3" style="box-shadow: 2px 2px 0 #000;">
+@php $questsDone = collect($quests)->where('completed', true)->count(); @endphp
+{{-- HUD strip + quest dropdown --}}
+<div class="mb-6">
+<div class="border-2 border-black rounded-t-[4px] px-4 py-3" style="box-shadow: 2px 2px 0 #000;" id="hud-strip">
     <div class="flex items-center gap-5 flex-wrap font-mono text-[14px] mb-2">
         <span>🔥 <strong>{{ $stat->streak }}</strong> <span class="text-[11px] text-[#6B6B6B]">streak</span></span>
         <span>✅ <strong id="wins-count">{{ $winsToday }}</strong> <span class="text-[11px] text-[#6B6B6B]">wins</span></span>
@@ -14,11 +16,29 @@
         @if(($stat->comeback_days_left ?? 0) > 0)
         <span class="text-[11px] font-bold text-[#FF4F00]">2× XP · {{ $stat->comeback_days_left }}d</span>
         @endif
+        <button onclick="toggleQuests()" class="ml-auto text-[11px] font-mono text-[#6B6B6B] hover:text-black transition-colors" id="quest-toggle">
+            📋 <span id="quest-done-count">{{ $questsDone }}</span>/3 ▾
+        </button>
     </div>
     <div class="h-1.5 bg-[#EBEBEB] rounded-full overflow-hidden">
         <div id="xp-bar" class="h-full bg-black transition-all duration-500 rounded-full" style="width: {{ $levelInfo['progress_pct'] }}%"></div>
     </div>
 </div>
+
+{{-- Quest dropdown (hidden by default, connected to HUD) --}}
+<div id="quest-panel" class="hidden border-2 border-t-0 border-black rounded-b-[4px] px-4 py-3" style="box-shadow: 2px 2px 0 #000;">
+    <div class="space-y-1.5">
+        @foreach($quests as $q)
+        <div id="quest-{{ $q['type'] }}" class="flex items-center gap-3 text-[13px]">
+            <span class="font-mono text-[15px] leading-none quest-icon">{{ $q['completed'] ? '☑' : '☐' }}</span>
+            <span class="flex-1 {{ $q['completed'] ? 'line-through text-[#B0B0A8]' : '' }} quest-label">{{ $q['label'] }}</span>
+            <span class="font-mono text-[11px] text-[#6B6B6B]">+{{ $q['xp'] }} XP</span>
+            <span class="font-mono text-[11px] text-[#B0B0A8] w-10 text-right quest-progress">{{ $q['completed'] ? 'done' : $q['progress'].'/'.$q['target'] }}</span>
+        </div>
+        @endforeach
+    </div>
+</div>
+</div>{{-- end hud-wrap --}}
 
 {{-- Daily Commitment --}}
 <div class="card mb-6" style="box-shadow: var(--shadow-hard);">
@@ -52,21 +72,6 @@
 {{-- Google Calendar strip (loaded async) --}}
 <div id="calendar-strip" class="mb-6"></div>
 
-{{-- Daily Quests --}}
-<div class="mb-5">
-    <div class="text-[10px] font-bold uppercase tracking-widest text-[#B0B0A8] mb-2">Daily Quests</div>
-    <div class="space-y-1.5">
-        @foreach($quests as $q)
-        <div id="quest-{{ $q['type'] }}" class="flex items-center gap-3 text-[13px]">
-            <span class="font-mono text-[15px] leading-none quest-icon">{{ $q['completed'] ? '☑' : '☐' }}</span>
-            <span class="flex-1 {{ $q['completed'] ? 'line-through text-[#B0B0A8]' : '' }} quest-label">{{ $q['label'] }}</span>
-            <span class="font-mono text-[11px] text-[#6B6B6B]">+{{ $q['xp'] }} XP</span>
-            <span class="font-mono text-[11px] text-[#B0B0A8] w-10 text-right quest-progress">{{ $q['completed'] ? 'done' : $q['progress'].'/'.$q['target'] }}</span>
-        </div>
-        @endforeach
-    </div>
-    <div class="border-t border-[#EBEBEB] mt-3"></div>
-</div>
 
 {{-- Task Board 2×2 grid --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -421,6 +426,15 @@ async function toggleTask(id, btn) {
     }
 }
 
+function toggleQuests() {
+    const panel  = document.getElementById('quest-panel');
+    const toggle = document.getElementById('quest-toggle');
+    const hud    = document.getElementById('hud-strip');
+    const open   = panel.classList.toggle('hidden');
+    toggle.innerHTML = toggle.innerHTML.replace(open ? '▴' : '▾', open ? '▾' : '▴');
+    hud.style.borderRadius = open ? '' : '4px 4px 0 0';
+}
+
 function updateXpBar(data) {
     const bar      = document.getElementById('xp-bar');
     const levelEl  = document.getElementById('level-display');
@@ -451,6 +465,9 @@ function updateQuestUI(questType) {
     if (icon)     icon.textContent = '☑';
     if (label)    label.classList.add('line-through', 'text-[#B0B0A8]');
     if (progress) progress.textContent = 'done';
+    // Update counter in HUD toggle button
+    const counter = document.getElementById('quest-done-count');
+    if (counter) counter.textContent = parseInt(counter.textContent) + 1;
 }
 
 async function promoteTask(id, btn) {
