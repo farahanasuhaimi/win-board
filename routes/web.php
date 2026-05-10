@@ -24,6 +24,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/calendar/events', [DashboardController::class, 'calendarEvents'])->name('calendar.events');
+    Route::get('/dashboard/shields', [DashboardController::class, 'shields'])->name('dashboard.shields');
     Route::post('/onboarding/complete', [DashboardController::class, 'completeOnboarding'])->name('onboarding.complete');
     Route::post('/day/reset', [DashboardController::class, 'reset'])->name('day.reset');
 

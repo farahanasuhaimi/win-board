@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\UserStat;
+use App\Services\GamificationService;
+use App\Services\QuestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,17 +53,51 @@ class TaskController extends Controller
     {
         $this->authorise($task);
 
-        $task->done = !$task->done;
+        $task->done   = !$task->done;
         $task->done_at = $task->done ? now() : null;
         $task->save();
 
-        if ($task->done) {
-            $stat = UserStat::firstOrCreate(['user_id' => $task->user_id]);
-            $stat->increment('total_wins');
-            $this->updateStreak($stat);
+        if (!$task->done) {
+            return response()->json(['done' => false]);
         }
 
-        return response()->json(['done' => $task->done]);
+        $stat = UserStat::firstOrCreate(['user_id' => $task->user_id]);
+        $stat->increment('total_wins');
+        $stat->refresh();
+
+        // Read comeback state before updateStreak can decrement it
+        $comebackActive = $stat->comeback_days_left > 0;
+        $multiplier     = $comebackActive ? 2 : 1;
+
+        $shieldGranted = $this->updateStreak($stat);
+        $stat->refresh();
+
+        // Calculate total XP for this task + any completed quests
+        $today   = now()->toDateString();
+        $baseXp  = GamificationService::xpForSection($task->section);
+
+        $questResult = QuestService::evaluate($task->user_id, $today);
+        $questXp     = collect($questResult['completed'])->sum('xp');
+        if ($questResult['all_bonus']) $questXp += 20;
+
+        $totalXp  = ($baseXp + $questXp) * $multiplier;
+        $xpResult = GamificationService::grantXp($stat, $totalXp);
+
+        return response()->json([
+            'done'            => true,
+            'xp_gained'       => $totalXp,
+            'total_xp'        => $xpResult['total_xp'],
+            'level_up'        => $xpResult['level_up'],
+            'level'           => $xpResult['level'],
+            'level_title'     => $xpResult['title'],
+            'progress_pct'    => $xpResult['progress_pct'],
+            'xp_in_level'     => $xpResult['xp_in_level'],
+            'xp_for_level'    => $xpResult['xp_for_level'],
+            'is_comeback'     => $comebackActive,
+            'quest_completed' => $questResult['completed'],
+            'all_quests_bonus' => $questResult['all_bonus'],
+            'shield_granted'  => $shieldGranted,
+        ]);
     }
 
     public function move(Request $request, Task $task)
@@ -129,18 +165,45 @@ class TaskController extends Controller
         abort_unless($task->user_id === Auth::id(), 403);
     }
 
-    private function updateStreak(UserStat $stat): void
+    private function updateStreak(UserStat $stat): bool
     {
-        $today = now()->toDateString();
+        $today     = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
+        $lastDate  = $stat->last_active_date?->toDateString();
+        $isNewDay  = $lastDate !== $today;
+        $shieldGranted = false;
+        $streakBroken  = false;
 
-        if ($stat->last_active_date?->toDateString() === $yesterday) {
+        if ($lastDate === $yesterday) {
             $stat->streak += 1;
-        } elseif ($stat->last_active_date?->toDateString() !== $today) {
-            $stat->streak = 1;
+            if ($stat->streak % 7 === 0 && $stat->shields < 3) {
+                $stat->shields = min(3, $stat->shields + 1);
+                $shieldGranted = true;
+            }
+        } elseif ($isNewDay) {
+            $gapDays = $lastDate
+                ? (int) \Carbon\Carbon::parse($lastDate)->diffInDays($today) - 1
+                : 999;
+
+            if ($gapDays === 1 && $stat->shields > 0) {
+                // One missed day — auto-consume a shield
+                $stat->shields -= 1;
+                $stat->streak  += 1;
+            } else {
+                $stat->streak            = 1;
+                $stat->comeback_days_left = 3;
+                $streakBroken = true;
+            }
+        }
+
+        // Decrement comeback on first task of each new day (but not the day it was just set)
+        if ($isNewDay && !$streakBroken && $stat->comeback_days_left > 0) {
+            $stat->comeback_days_left -= 1;
         }
 
         $stat->last_active_date = $today;
         $stat->save();
+
+        return $shieldGranted;
     }
 }

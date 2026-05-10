@@ -3,20 +3,41 @@
 @section('title', 'Dashboard — Daily Win Board')
 
 @section('content')
-{{-- Streak + Wins header bar --}}
-<div class="flex items-center gap-4 mb-6">
+{{-- Streak + Wins + XP header bar --}}
+<div class="flex flex-wrap items-stretch gap-4 mb-6">
+    {{-- Streak + shields --}}
     <div class="card flex items-center gap-3 py-3 px-5" style="box-shadow: var(--shadow-hard-sm);">
         <span class="text-2xl">🔥</span>
         <div>
             <div class="font-mono font-bold text-xl">{{ $stat->streak }}</div>
             <div class="text-xs text-[#6B6B6B] uppercase tracking-wide">Day Streak</div>
+            <div class="text-[12px] mt-0.5 tracking-wide" id="shield-display">{{ str_repeat('🛡️', $stat->shields ?? 0) }}{{ str_repeat('⬜', 3 - ($stat->shields ?? 0)) }}</div>
         </div>
     </div>
+    {{-- Wins today --}}
     <div class="card flex items-center gap-3 py-3 px-5" style="box-shadow: var(--shadow-hard-sm);">
         <span class="text-2xl">✅</span>
         <div>
             <div class="font-mono font-bold text-xl" id="wins-count">{{ $winsToday }}</div>
             <div class="text-xs text-[#6B6B6B] uppercase tracking-wide">Wins Today</div>
+        </div>
+    </div>
+    {{-- XP + Level --}}
+    <div class="card flex items-center gap-3 py-3 px-5 flex-1 min-w-[180px]" style="box-shadow: var(--shadow-hard-sm);">
+        <span class="text-2xl">⭐</span>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="font-bold text-sm leading-none" id="level-display">Lv.{{ $levelInfo['level'] }} · {{ $levelInfo['title'] }}</span>
+                <span class="font-mono text-[11px] text-[#6B6B6B] shrink-0" id="xp-display">{{ $levelInfo['xp_in_level'] }}/{{ $levelInfo['xp_for_level'] ?? '∞' }}</span>
+            </div>
+            <div class="h-2 bg-[#F4F4F0] rounded-full overflow-hidden border border-black">
+                <div id="xp-bar" class="h-full bg-black transition-all duration-500 rounded-full" style="width: {{ $levelInfo['progress_pct'] }}%"></div>
+            </div>
+            @if(($stat->comeback_days_left ?? 0) > 0)
+            <div class="text-[10px] font-bold text-[#FF4F00] mt-1">🔥 Comeback · 2× XP · {{ $stat->comeback_days_left }}d left</div>
+            @else
+            <div class="text-[10px] text-[#B0B0A8] mt-1" id="comeback-label"></div>
+            @endif
         </div>
     </div>
 </div>
@@ -52,6 +73,34 @@
 
 {{-- Google Calendar strip (loaded async) --}}
 <div id="calendar-strip" class="mb-6"></div>
+
+{{-- Daily Quests --}}
+<div class="card mb-6" style="box-shadow: var(--shadow-hard-sm);">
+    <div class="text-xs font-bold uppercase tracking-widest text-[#6B6B6B] mb-4">Daily Quests · +10 XP each · +20 bonus for all 3</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @foreach($quests as $q)
+        <div id="quest-{{ $q['type'] }}" class="border-2 border-black rounded-[4px] p-3 {{ $q['completed'] ? 'bg-[#F4F4F0]' : '' }}" style="{{ $q['completed'] ? '' : '' }}">
+            <div class="flex items-start justify-between gap-2 mb-1">
+                <span class="font-bold text-[13px] leading-tight">{{ $q['label'] }}</span>
+                @if($q['completed'])
+                    <span class="text-[#23A094] font-bold text-lg leading-none quest-check">✓</span>
+                @else
+                    <span class="text-[#B0B0A8] font-bold text-lg leading-none quest-check hidden">✓</span>
+                @endif
+            </div>
+            <div class="text-[11px] text-[#6B6B6B] mb-2">{{ $q['description'] }}</div>
+            <div class="h-1.5 bg-[#F4F4F0] rounded-full overflow-hidden border border-[#D0D0C8] mb-1">
+                @php $pct = $q['target'] > 0 ? min(100, round($q['progress'] / $q['target'] * 100)) : 0; @endphp
+                <div class="quest-bar h-full rounded-full transition-all duration-300 {{ $q['completed'] ? 'bg-[#23A094]' : 'bg-black' }}" style="width: {{ $pct }}%"></div>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-mono text-[#B0B0A8] quest-progress">{{ $q['progress'] }}/{{ $q['target'] }}</span>
+                <span class="text-[10px] font-mono text-[#6B6B6B]">+{{ $q['xp'] }} XP</span>
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
 
 {{-- Task Board 2×2 grid --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -214,6 +263,7 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 const showOnboarding = {{ $showOnboarding ? 'true' : 'false' }};
 const toastMessages = ['Done! Keep going 🔥', 'Yes! That counts!', 'One more win!', 'You showed up.', 'Progress! ⭐'];
 const commitTaskId = {{ $commitTaskId ?? 'null' }};
+const questTypes = @json(array_column($quests, 'type'));
 const sectionLabels = {
     should: '🟡 Should Do Today',
     good:   '🟢 Good To Do',
@@ -339,10 +389,10 @@ function appendTask(task, section) {
 }
 
 async function toggleTask(id, btn) {
-    const li = btn.closest('li');
+    const li   = btn.closest('li');
     const span = li.querySelector('span');
 
-    const res = await fetch(`/tasks/${id}/toggle`, {
+    const res  = await fetch(`/tasks/${id}/toggle`, {
         method: 'PATCH',
         headers: { 'X-CSRF-TOKEN': csrfToken }
     });
@@ -356,6 +406,27 @@ async function toggleTask(id, btn) {
         const winsEl = document.getElementById('wins-count');
         winsEl.textContent = parseInt(winsEl.textContent) + 1;
         showToast();
+
+        // Gamification updates
+        if (data.xp_gained != null) {
+            updateXpBar(data);
+            if (data.level_up) {
+                setTimeout(() => showToast(`Level up! Lv.${data.level} — ${data.level_title} ⭐`), 600);
+            }
+            if (data.shield_granted) {
+                updateShields();
+                setTimeout(() => showToast('🛡️ Shield earned! 7-day streak!'), 1200);
+            }
+            if (data.quest_completed?.length) {
+                data.quest_completed.forEach((q, i) => {
+                    updateQuestUI(q.type);
+                    setTimeout(() => showToast(`Quest: ${q.label} +${q.xp} XP ✓`), (i + 1) * 800);
+                });
+            }
+            if (data.all_quests_bonus) {
+                setTimeout(() => showToast('All quests done! +20 XP bonus ✨'), 1600);
+            }
+        }
     } else {
         btn.classList.remove('bg-black');
         btn.innerHTML = '';
@@ -381,6 +452,46 @@ async function toggleTask(id, btn) {
             if (text) text.classList.remove('line-through', 'text-[#6B6B6B]');
             if (editBtn) editBtn.classList.remove('hidden');
         }
+    }
+}
+
+function updateXpBar(data) {
+    const bar     = document.getElementById('xp-bar');
+    const levelEl = document.getElementById('level-display');
+    const xpEl    = document.getElementById('xp-display');
+    if (bar)     bar.style.width   = data.progress_pct + '%';
+    if (levelEl) levelEl.textContent = `Lv.${data.level} · ${data.level_title}`;
+    if (xpEl)    xpEl.textContent  = `${data.xp_in_level}/${data.xp_for_level ?? '∞'}`;
+}
+
+function updateShields() {
+    // Re-fetch is simplest — shield count lives on server
+    fetch('/dashboard/shields')
+        .then(r => r.json())
+        .then(d => {
+            const el = document.getElementById('shield-display');
+            if (el) el.textContent = '🛡️'.repeat(d.shields) + '⬜'.repeat(3 - d.shields);
+        })
+        .catch(() => {});
+}
+
+function updateQuestUI(questType) {
+    const el = document.getElementById('quest-' + questType);
+    if (!el) return;
+    const bar      = el.querySelector('.quest-bar');
+    const check    = el.querySelector('.quest-check');
+    const progress = el.querySelector('.quest-progress');
+    if (bar) {
+        bar.style.width = '100%';
+        bar.classList.remove('bg-black');
+        bar.classList.add('bg-[#23A094]');
+    }
+    if (check) check.classList.remove('hidden');
+    el.classList.add('bg-[#F4F4F0]');
+    // Update progress text to show target/target
+    if (progress) {
+        const parts = progress.textContent.split('/');
+        if (parts[1]) progress.textContent = parts[1].trim() + '/' + parts[1].trim();
     }
 }
 

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\DailyCommit;
 use App\Models\Task;
 use App\Models\UserStat;
+use App\Services\GamificationService;
 use App\Services\GoogleCalendarService;
+use App\Services\QuestService;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -68,10 +70,21 @@ class DashboardController extends Controller
 
         $showOnboarding = !$user->onboarded_at;
 
+        $levelInfo = GamificationService::getLevelInfo($stat->xp ?? 0);
+        $rawQuests = QuestService::getOrGenerate($user->id, $today);
+        $quests    = QuestService::withProgress($rawQuests, $user->id, $today);
+
         return view('dashboard.index', compact(
             'commit', 'tasks', 'stat', 'winsToday', 'today',
-            'commitTaskId', 'commitDone', 'showOnboarding'
+            'commitTaskId', 'commitDone', 'showOnboarding',
+            'levelInfo', 'quests'
         ));
+    }
+
+    public function shields()
+    {
+        $stat = UserStat::firstOrCreate(['user_id' => Auth::id()]);
+        return response()->json(['shields' => $stat->shields ?? 0]);
     }
 
     public function completeOnboarding()
