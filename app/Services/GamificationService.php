@@ -7,10 +7,10 @@ use App\Models\UserStat;
 class GamificationService
 {
     const XP_BY_SECTION = [
-        'must'   => 30,
-        'should' => 20,
-        'good'   => 10,
-        'park'   => 0,
+        'must'   => 15,
+        'should' => 10,
+        'good'   => 5,
+        'park'   => 5,
     ];
 
     const LEVELS = [
